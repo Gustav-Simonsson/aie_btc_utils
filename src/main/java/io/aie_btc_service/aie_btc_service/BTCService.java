@@ -78,6 +78,13 @@ public class BTCService {
         slf4jLogger.info("spendTx:");
         slf4jLogger.info(spendTx.toString());
 
+        // TODO: proper thread management, this is just for testing
+        new Thread(new SPVNode()).start();
+        try {
+            Thread.sleep(5000);
+        } catch (InterruptedException e) {
+            slf4jLogger.info("Interrupted :O...");
+        }
         slf4jLogger.info("stopping...");
     }
 
