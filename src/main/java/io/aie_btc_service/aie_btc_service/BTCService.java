@@ -63,15 +63,15 @@ public class BTCService {
         ECKey TestKey3 = new ECKey();
 
         Transaction partialContractTx =
-            getContractFundsLockTx(TestKey1.getPubKey(),
-                                   TestKey2.getPubKey(),
-                                   TestKey3.getPubKey(),
+            getContractFundsLockTx(TestKey1.toAddress(netParams),
+                                   TestKey2.toAddress(netParams),
+                                   TestKey3.toAddress(netParams),
                                    new BigInteger("100000000") // 1 BTC
                                    );
 
         // TODO: add test inputs to partialContractTx
         Transaction spendTx = getContractSpendTx(partialContractTx,
-                                                 TestKey2.getPubKey());
+                                                 TestKey2.toAddress(netParams));
         slf4jLogger.info("contractTx:");
         slf4jLogger.info(partialContractTx.toString());
 
@@ -82,34 +82,29 @@ public class BTCService {
     }
 
     // Returns contract tx without inputs which are added by offerer later on
-    public static Transaction getContractFundsLockTx(byte[] offererPubKeyBytes,
-                                                     byte[] takerPubKeyBytes,
-                                                     byte[] oraclePubKeyBytes,
+    public static Transaction getContractFundsLockTx(Address offererAddress,
+                                                     Address takerAddress,
+                                                     Address oracleAddress,
                                                      BigInteger SatoshiAmount
                                                      ) {
-        // NOTE: These ECKeys contain only the public part of the EC key pair.
-        ECKey offererKey = new ECKey(null, offererPubKeyBytes);
-        ECKey takerKey   = new ECKey(null, takerPubKeyBytes);
-        ECKey oracleKey  = new ECKey(null, oraclePubKeyBytes);
-        List<ECKey> keys = ImmutableList.of(offererKey, takerKey, oracleKey);
-        // 2 out of 3 multisig script
-        Script script = ScriptBuilder.createMultiSigOutputScript(2, keys);
+        // TODO: this is normal (pay-to-pubkey-hash) script
+        // TODO: replace this placeholder with proper multisig script, with
+        // the binary event keys if that's possible
+        Script script = ScriptBuilder.createOutputScript(takerAddress);
         Transaction contractTx = new Transaction(netParams);
         contractTx.addOutput(SatoshiAmount, script);
         return contractTx;
     }
 
     public static Transaction getContractSpendTx(Transaction LockFundsTx,
-                                                 byte[] receiverPubKeyBytes) {
+                                                 Address receiverAddress) {
         Transaction spendTx = new Transaction(netParams);
-        ECKey receiverKey = new ECKey(null, receiverPubKeyBytes);
         TransactionOutput multisigOutput = LockFundsTx.getOutput(0);
         // TODO: validate output, amount
         // Script multisigScript = multisigOutput.getScriptPubKey();
         BigInteger amount = multisigOutput.getValue();
-        spendTx.addOutput(amount, receiverKey);
+        spendTx.addOutput(amount, receiverAddress);
         spendTx.addInput(multisigOutput);
         return spendTx;
     }
 }
-
