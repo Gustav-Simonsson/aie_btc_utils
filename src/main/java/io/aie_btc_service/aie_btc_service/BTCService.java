@@ -14,6 +14,7 @@ import com.google.bitcoin.core.PeerGroup;
 import com.google.bitcoin.core.Sha256Hash;
 import com.google.bitcoin.core.Transaction;
 import com.google.bitcoin.core.TransactionInput;
+import com.google.bitcoin.core.TransactionOutPoint;
 import com.google.bitcoin.core.TransactionOutput;
 import com.google.bitcoin.core.Utils;
 import com.google.bitcoin.core.Wallet;
@@ -30,6 +31,7 @@ import com.google.common.collect.ImmutableList;
 
 import net.jcip.annotations.Immutable;
 
+import org.h2.value.Transfer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -81,18 +83,32 @@ public class BTCService {
     }
 
     // Returns T2 without inputs and without signatures
-    public static Transaction getT2S1(byte[] offererPubKey,
+    public static Transaction getT2S1(byte[] giverPubKey,
                                       byte[] takerPubKey,
                                       byte[] eventPubKey,
                                       BigInteger SatoshiAmount
                                       ) {
+        /* Validations:
+           1. Each pubkey is a different one
+           2. The amount in satoshis is sufficiently bigger than dust amount
+         */
+        checkAmount(SatoshiAmount, "10");
+        if ((giverPubKey == takerPubKey)  ||
+            (giverPubKey == eventPubKey)  ||
+            (takerPubKey   == eventPubKey)) {
+            throw new RuntimeException("giver, taker, event pubkeys " +
+                                       "not unique: " +
+                                       giverPubKey + ", " +
+                                       takerPubKey   + ", " +
+                                       eventPubKey);
+        }
         // NOTE: These ECKeys contain only the public part of the EC key pair.
-        ECKey offererKey = new ECKey(null, offererPubKey);
+        ECKey giverKey = new ECKey(null, giverPubKey);
         ECKey takerKey   = new ECKey(null, takerPubKey);
         // NOTE: we have a single event key. Outcome is handled by encrypting
         // its private part two times - with 'yes' and 'no' pubkey of oracle
         ECKey eventKey   = new ECKey(null, eventPubKey);
-        List<ECKey> keys = ImmutableList.of(offererKey, takerKey, eventKey);
+        List<ECKey> keys = ImmutableList.of(giverKey, takerKey, eventKey);
         // 2 out of 3 multisig script
         Script script = ScriptBuilder.createMultiSigOutputScript(2, keys);
         Transaction contractTx = new Transaction(netParams);
@@ -102,23 +118,56 @@ public class BTCService {
     }
 
     public static Transaction getT2S2(Transaction t2,
-                                      TransactionOutput t1Output) {
+                                      TransactionOutput t1Output,
+                                      byte[] giverPubKey,
+                                      byte[] takerPubKey
+                                      ) {
         // Add input from either giver or taker
         // one of them can already be present and signed
-        int inputCount = t2.getInputs().size();
+        int outputCount    = t2.getOutputs().size();
+        int inputCount     = t2.getInputs().size();
+        boolean firstInput = inputCount == 0;
         if (inputCount > 1) {
             // TODO: design proper exception classes
             throw new RuntimeException("More than one input in T2 step 2: " +
-                                       inputCount);
+                                       firstInput);
         }
-        int outputCount = t2.getOutputs().size();
         if (outputCount != 1) {
             throw new RuntimeException("T2 does not have single output in" +
                                        "T2 step 2: " + outputCount);
         }
 
-        
-        Script script = t1Output.getScriptPubKey();
+        /* Validations:
+           1. t1Output is a "normal" pay-to-address output
+           2. t1Output's address is from one of the pubkeys in t2's output
+           3. when we have two inputs to t2, they are each for one of the
+           t2 output pubkeys but NOT the for the same one
+        */
+        Script t1OutputScript = t1Output.getScriptPubKey();
+        if (!t1OutputScript.isSentToAddress()) {
+            throw new RuntimeException("t1Output is not " +
+                                       "DUP HASH160 EQUALVERIFY CHECKSIG");
+        }
+
+        Address t1toAddress = t1OutputScript.getToAddress(netParams);
+        Address giverToAddress =
+            new ECKey(null, giverPubKey).toAddress(netParams);
+        Address takerToAddress =
+            new ECKey(null, takerPubKey).toAddress(netParams);
+
+        if ((t1toAddress != giverToAddress) ||
+            (t1toAddress != takerToAddress)) {
+            throw new RuntimeException("input is not from giver or taker");
+        }
+
+        if (!firstInput) {
+            Address secondInputToAddress =
+                t2.getInput(0).getScriptSig().getToAddress(netParams);
+            if (secondInputToAddress == t1toAddress)
+                throw new RuntimeException("second input to T2 " +
+                                           "cannot be same as first input");
+        }
+        checkAmount(t1Output.getValue(), "2");
         t2.addInput(t1Output);
         // Sha256Hash sighash = t
         return t2;
@@ -137,4 +186,13 @@ public class BTCService {
         spendTx.addInput(multisigOutput);
         return spendTx;
     }
-}
+
+    private static void checkAmount(BigInteger amount, String dustMultiplier) {
+        BigInteger mul = new BigInteger(dustMultiplier);
+        BigInteger min = Transaction.MIN_NONDUST_OUTPUT.multiply(mul);
+        if (1 != amount.compareTo(min)) {
+            throw new RuntimeException("contract amount too low: " + amount);
+        }
+        return;
+    }
+    }
