@@ -1,7 +1,7 @@
 all: build run
 
 build:
-	mvn clean package
+	mvn clean package | grep -v "skipping"
 	chmod +x target/aie_btc_service-*-SNAPSHOT-jar-with-dependencies.jar
 
 run:

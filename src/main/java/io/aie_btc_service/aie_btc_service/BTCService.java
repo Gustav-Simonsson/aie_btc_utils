@@ -62,18 +62,17 @@ public class BTCService {
         ECKey TestKey2 = new ECKey();
         ECKey TestKey3 = new ECKey();
 
-        Transaction partialContractTx =
-            getContractFundsLockTx(TestKey1.toAddress(netParams),
-                                   TestKey2.toAddress(netParams),
-                                   TestKey3.toAddress(netParams),
+        Transaction t2s1 =
+            getT2S1(TestKey1.getPubKey(),
+                                   TestKey2.getPubKey(),
+                                   TestKey3.getPubKey(),
                                    new BigInteger("100000000") // 1 BTC
                                    );
 
-        // TODO: add test inputs to partialContractTx
-        Transaction spendTx = getContractSpendTx(partialContractTx,
-                                                 TestKey2.toAddress(netParams));
+        Transaction spendTx = getTx3(t2s1,
+                                     TestKey2.toAddress(netParams));
         slf4jLogger.info("contractTx:");
-        slf4jLogger.info(partialContractTx.toString());
+        slf4jLogger.info(t2s1.toString());
 
         slf4jLogger.info("spendTx:");
         slf4jLogger.info(spendTx.toString());
@@ -81,27 +80,58 @@ public class BTCService {
         slf4jLogger.info("stopping...");
     }
 
-    // Returns contract tx without inputs which are added by offerer later on
-    public static Transaction getContractFundsLockTx(Address offererAddress,
-                                                     Address takerAddress,
-                                                     Address oracleAddress,
-                                                     BigInteger SatoshiAmount
-                                                     ) {
-        // TODO: this is normal (pay-to-pubkey-hash) script
-        // TODO: replace this placeholder with proper multisig script, with
-        // the binary event keys if that's possible
-        Script script = ScriptBuilder.createOutputScript(takerAddress);
+    // Returns T2 without inputs and without signatures
+    public static Transaction getT2S1(byte[] offererPubKey,
+                                      byte[] takerPubKey,
+                                      byte[] eventPubKey,
+                                      BigInteger SatoshiAmount
+                                      ) {
+        // NOTE: These ECKeys contain only the public part of the EC key pair.
+        ECKey offererKey = new ECKey(null, offererPubKey);
+        ECKey takerKey   = new ECKey(null, takerPubKey);
+        // NOTE: we have a single event key. Outcome is handled by encrypting
+        // its private part two times - with 'yes' and 'no' pubkey of oracle
+        ECKey eventKey   = new ECKey(null, eventPubKey);
+        List<ECKey> keys = ImmutableList.of(offererKey, takerKey, eventKey);
+        // 2 out of 3 multisig script
+        Script script = ScriptBuilder.createMultiSigOutputScript(2, keys);
         Transaction contractTx = new Transaction(netParams);
+        // TODO: Add default miner fee?
         contractTx.addOutput(SatoshiAmount, script);
         return contractTx;
     }
 
-    public static Transaction getContractSpendTx(Transaction LockFundsTx,
-                                                 Address receiverAddress) {
+    public static Transaction getT2S2(Transaction t2,
+                                      TransactionOutput t1Output) {
+        // Add input from either giver or taker
+        // one of them can already be present and signed
+        int inputCount = t2.getInputs().size();
+        if (inputCount > 1) {
+            // TODO: design proper exception classes
+            throw new RuntimeException("More than one input in T2 step 2: " +
+                                       inputCount);
+        }
+        int outputCount = t2.getOutputs().size();
+        if (outputCount != 1) {
+            throw new RuntimeException("T2 does not have single output in" +
+                                       "T2 step 2: " + outputCount);
+        }
+
+        
+        Script script = t1Output.getScriptPubKey();
+        t2.addInput(t1Output);
+        // Sha256Hash sighash = t
+        return t2;
+    }
+
+    // Returns T3 unsigned
+    public static Transaction getTx3(Transaction LockFundsTx,
+                                     Address receiverAddress) {
         Transaction spendTx = new Transaction(netParams);
         TransactionOutput multisigOutput = LockFundsTx.getOutput(0);
         // TODO: validate output, amount
         // Script multisigScript = multisigOutput.getScriptPubKey();
+        // TODO: Add default miner fee?
         BigInteger amount = multisigOutput.getValue();
         spendTx.addOutput(amount, receiverAddress);
         spendTx.addInput(multisigOutput);
