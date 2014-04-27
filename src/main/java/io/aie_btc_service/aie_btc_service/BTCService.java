@@ -13,6 +13,7 @@ import com.google.bitcoin.core.PeerGroup;
 
 import com.google.bitcoin.core.Sha256Hash;
 import com.google.bitcoin.core.Transaction;
+import com.google.bitcoin.core.Transaction.SigHash;
 import com.google.bitcoin.core.TransactionInput;
 import com.google.bitcoin.core.TransactionOutPoint;
 import com.google.bitcoin.core.TransactionOutput;
@@ -21,12 +22,15 @@ import com.google.bitcoin.core.Wallet;
 import com.google.bitcoin.net.discovery.DnsDiscovery;
 import com.google.bitcoin.net.discovery.PeerDiscovery;
 import com.google.bitcoin.params.MainNetParams;
+import com.google.bitcoin.params.TestNet2Params;
+import com.google.bitcoin.params.TestNet3Params;
 import com.google.bitcoin.script.Script;
 import com.google.bitcoin.script.ScriptBuilder;
 import com.google.bitcoin.store.BlockStoreException;
 import com.google.bitcoin.store.SPVBlockStore;
 import com.google.bitcoin.store.UnreadableWalletException;
 import com.google.bitcoin.uri.BitcoinURI;
+import com.google.bitcoin.utils.BriefLogFormatter;
 import com.google.common.collect.ImmutableList;
 
 import net.jcip.annotations.Immutable;
@@ -34,6 +38,9 @@ import net.jcip.annotations.Immutable;
 import org.h2.value.Transfer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import org.spongycastle.util.encoders.Hex;
+import org.spongycastle.crypto.digests.ShortenedDigest;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -49,35 +56,64 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 
+import javax.xml.bind.DatatypeConverter;
+
 public class BTCService {
     public static final Logger slf4jLogger =
         LoggerFactory.getLogger(BTCService.class);
-    public static final MainNetParams netParams = new MainNetParams();
+    public static final TestNet3Params netParams = new TestNet3Params();
+    public static final SigHash sigHashAll = Transaction.SigHash.ALL;
 
     public static void main(String[] args) {
+        BriefLogFormatter.init();
         slf4jLogger.info("starting...");
 
         // TODO: replace these hardcoded values with values from JSON API
         // TODO: for testing, we'll use the public and private parts of these
         // as we like, later on they will all come from JSON API input
-        ECKey TestKey1 = new ECKey();
-        ECKey TestKey2 = new ECKey();
-        ECKey TestKey3 = new ECKey();
+        ECKey giverKey  = new ECKey(Hex.decode("E5983C1611045D6AC4CD216F836A2D3CB094E71F6B407E19089819C1AC10CD14"), Hex.decode("03525B5A1FF10811AEF3A22651EC62BABB8C2613E5DECB8E912E3EDD4316EDA4CC"));
+        ECKey takerKey  = new ECKey(Hex.decode("9CF387B3E3748AAFBBAEECF34FEEFEC1530E1776AB085CBD2CF6BF5AA8FB226C"), Hex.decode("028621D3223E6A9780C6FF8BBAC6C27E85FF99976726D8D80350C82B463671BEAE"));
+        ECKey oracleKey = new ECKey(Hex.decode("9F5DB851AFD9352F3AC36DA95ED1DEB70622C33781D609C5B3D16CC503F9878B"), Hex.decode("0235D32F838D6E85088192D13F211BBA79E4C25B6EB376FA7961EA919B754CABF7"));
 
-        Transaction t2s1 =
-            getT2S1(TestKey1.getPubKey(),
-                                   TestKey2.getPubKey(),
-                                   TestKey3.getPubKey(),
+        Transaction t2s1 = getT2S1(giverKey.getPubKey(),
+                                   takerKey.getPubKey(),
+                                   oracleKey.getPubKey(),
                                    new BigInteger("100000000") // 1 BTC
                                    );
 
-        Transaction spendTx = getTx3(t2s1,
-                                     TestKey2.toAddress(netParams));
-        slf4jLogger.info("contractTx:");
+        BigInteger giverAmount = new BigInteger("98000000"); // 0.98 BTC
+
+        Transaction t1 = new Transaction(netParams);
+        Script t1OutputScript =
+            ScriptBuilder.createOutputScript(giverKey.toAddress(netParams));
+        t1.addOutput(giverAmount, t1OutputScript);
+
+        TransactionOutput giverInput = t1.getOutput(0);
+
+        slf4jLogger.info("giverInput:");
+        slf4jLogger.info(giverInput.toString());
+
+        TransactionAndSighash txAndSighash = getT2S2(t2s1,
+                                                     giverInput,
+                                                     giverKey.getPubKey(),
+                                                     takerKey.getPubKey());
+
+        // TODO: signing
+
+        Transaction t3 = getTx3(txAndSighash.tx,
+                                takerKey.toAddress(netParams));
+
+        slf4jLogger.info("T2S1: ");
         slf4jLogger.info(t2s1.toString());
 
-        slf4jLogger.info("spendTx:");
-        slf4jLogger.info(spendTx.toString());
+        slf4jLogger.info("T2S2: ");
+        slf4jLogger.info(txAndSighash.tx.toString());
+
+        slf4jLogger.info("T2S2 sighash: ");
+        slf4jLogger.info(txAndSighash.sighash.toString());
+
+        slf4jLogger.info("T3: ");
+        slf4jLogger.info(t3.toString());
 
         slf4jLogger.info("stopping...");
     }
@@ -92,22 +128,22 @@ public class BTCService {
            1. Each pubkey is a different one
            2. The amount in satoshis is sufficiently bigger than dust amount
          */
-        checkAmount(SatoshiAmount, "10");
+        checkMinimumAmount(SatoshiAmount, "10"); // TODO: what multiple?
         if ((giverPubKey == takerPubKey)  ||
             (giverPubKey == eventPubKey)  ||
-            (takerPubKey   == eventPubKey)) {
+            (takerPubKey == eventPubKey)) {
             throw new RuntimeException("giver, taker, event pubkeys " +
                                        "not unique: " +
                                        giverPubKey + ", " +
-                                       takerPubKey   + ", " +
+                                       takerPubKey + ", " +
                                        eventPubKey);
         }
         // NOTE: These ECKeys contain only the public part of the EC key pair.
         ECKey giverKey = new ECKey(null, giverPubKey);
-        ECKey takerKey   = new ECKey(null, takerPubKey);
+        ECKey takerKey = new ECKey(null, takerPubKey);
         // NOTE: we have a single event key. Outcome is handled by encrypting
         // its private part two times - with 'yes' and 'no' pubkey of oracle
-        ECKey eventKey   = new ECKey(null, eventPubKey);
+        ECKey eventKey = new ECKey(null, eventPubKey);
         List<ECKey> keys = ImmutableList.of(giverKey, takerKey, eventKey);
         // 2 out of 3 multisig script
         Script script = ScriptBuilder.createMultiSigOutputScript(2, keys);
@@ -117,11 +153,11 @@ public class BTCService {
         return contractTx;
     }
 
-    public static Transaction getT2S2(Transaction t2,
-                                      TransactionOutput t1Output,
-                                      byte[] giverPubKey,
-                                      byte[] takerPubKey
-                                      ) {
+    public static TransactionAndSighash getT2S2(Transaction t2,
+                                                TransactionOutput t1Output,
+                                                byte[] giverPubKey,
+                                                byte[] takerPubKey
+                                                ) {
         // Add input from either giver or taker
         // one of them can already be present and signed
         int outputCount    = t2.getOutputs().size();
@@ -150,15 +186,20 @@ public class BTCService {
         }
 
         Address t1toAddress = t1OutputScript.getToAddress(netParams);
+
+        /*
         Address giverToAddress =
             new ECKey(null, giverPubKey).toAddress(netParams);
         Address takerToAddress =
             new ECKey(null, takerPubKey).toAddress(netParams);
 
-        if ((t1toAddress != giverToAddress) ||
-            (t1toAddress != takerToAddress)) {
-            throw new RuntimeException("input is not from giver or taker");
-        }
+            if (t1toAddress.toString() == giverToAddress.toString()) {
+            throw new RuntimeException("input is not from giver or taker " +
+                                       t1toAddress + ", " +
+                                       giverToAddress + ", " +
+                                       takerToAddress);
+         }
+        */
 
         if (!firstInput) {
             Address secondInputToAddress =
@@ -167,10 +208,14 @@ public class BTCService {
                 throw new RuntimeException("second input to T2 " +
                                            "cannot be same as first input");
         }
-        checkAmount(t1Output.getValue(), "2");
+        checkMinimumAmount(t1Output.getValue(), "2"); // TODO: what multiple?
         t2.addInput(t1Output);
-        // Sha256Hash sighash = t
-        return t2;
+        t2.setLockTime(1398617867 + (86400 * 10));
+        Sha256Hash sighash = t2.hashForSignature(inputCount,
+                                                 t1OutputScript,
+                                                 sigHashAll,
+                                                 false);
+        return new TransactionAndSighash(t2, sighash);
     }
 
     // Returns T3 unsigned
@@ -187,7 +232,8 @@ public class BTCService {
         return spendTx;
     }
 
-    private static void checkAmount(BigInteger amount, String dustMultiplier) {
+    private static void checkMinimumAmount(BigInteger amount,
+                                           String dustMultiplier) {
         BigInteger mul = new BigInteger(dustMultiplier);
         BigInteger min = Transaction.MIN_NONDUST_OUTPUT.multiply(mul);
         if (1 != amount.compareTo(min)) {
@@ -195,4 +241,4 @@ public class BTCService {
         }
         return;
     }
-    }
+}

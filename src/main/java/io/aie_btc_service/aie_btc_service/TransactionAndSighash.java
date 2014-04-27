@@ -1,7 +1,5 @@
 package io.aie_btc_service.aie_btc_service;
 
-import org.spongycastle.crypto.digests.ShortenedDigest;
-
 import com.google.bitcoin.core.Sha256Hash;
 import com.google.bitcoin.core.Transaction;
 
