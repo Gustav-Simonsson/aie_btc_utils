@@ -1,7 +1,7 @@
 all: build run
 
 build:
-	mvn clean package | grep -v "skipping"
+	mvn clean package | grep -v "skipping" | grep -v "Download"
 	chmod +x target/aie_btc_service-*-SNAPSHOT-jar-with-dependencies.jar
 
 run:
