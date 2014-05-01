@@ -19,6 +19,9 @@ import com.google.bitcoin.core.TransactionOutPoint;
 import com.google.bitcoin.core.TransactionOutput;
 import com.google.bitcoin.core.Utils;
 import com.google.bitcoin.core.Wallet;
+
+import com.google.bitcoin.crypto.TransactionSignature;
+
 import com.google.bitcoin.net.discovery.DnsDiscovery;
 import com.google.bitcoin.net.discovery.PeerDiscovery;
 import com.google.bitcoin.params.MainNetParams;
@@ -61,7 +64,7 @@ import javax.xml.bind.DatatypeConverter;
 public class BTCService {
     public static final Logger slf4jLogger =
         LoggerFactory.getLogger(BTCService.class);
-    public static final TestNet3Params netParams = new TestNet3Params();
+    public static final MainNetParams netParams = new MainNetParams();
     public static final SigHash sigHashAll = Transaction.SigHash.ALL;
 
     public static void main(String[] args) {
@@ -119,11 +122,34 @@ public class BTCService {
         slf4jLogger.info("T2S3: "         + t2s3AndSighash.tx.toString());
         slf4jLogger.info("T2S3 sighash: " + t2s3AndSighash.sighash);
 
-        // TODO: signing
+        TransactionSignature giverSignature =
+            new TransactionSignature(giverKey.sign(t2s2AndSighash.sighash), sigHashAll, true);
+        TransactionSignature takerSignature =
+            new TransactionSignature(takerKey.sign(t2s3AndSighash.sighash), sigHashAll, true);
+
+        Script giverScriptSig = ScriptBuilder.createInputScript(giverSignature, giverKey);
+        Script takerScriptSig = ScriptBuilder.createInputScript(takerSignature, takerKey);
+
+        Transaction t2s4 = t2s3AndSighash.tx;
+
+        t2s4.getInput(0).setScriptSig(giverScriptSig);
+        t2s4.getInput(1).setScriptSig(takerScriptSig);
+
+        t2s4.verify();
+
         Transaction t3 = getT3(t2s3AndSighash.tx,
                                takerKey.toAddress(netParams));
 
         slf4jLogger.info("T3: " + t3.toString());
+
+        // TODO: proper thread management, this is just for testing
+        new Thread(new SPVNode()).start();
+        try {
+            Thread.sleep(5000);
+        } catch (InterruptedException e) {
+            slf4jLogger.info("Interrupted :O...");
+        }
+
         slf4jLogger.info("stopping...");
     }
 
