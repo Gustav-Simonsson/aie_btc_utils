@@ -23,6 +23,8 @@ import com.google.bitcoin.script.Script;
 import com.google.bitcoin.store.BlockStoreException;
 
 import com.google.bitcoin.store.H2FullPrunedBlockStore;
+
+import com.google.bitcoin.store.PostgresFullPrunedBlockStore;
 import com.google.bitcoin.store.SPVBlockStore;
 import com.google.bitcoin.store.UnreadableWalletException;
 import com.google.bitcoin.uri.BitcoinURI;
@@ -54,15 +56,18 @@ public class BTCNode implements Runnable {
         slf4jLogger.info("starting AIE bitcoinj node...");
 
         try {
-            H2FullPrunedBlockStore blockStore = new H2FullPrunedBlockStore(netParams,
-                                                                           "aie_h2_full_pruned_block_store",
-                                                                           235067); // all testnet blocks 2014-05-04
-            slf4jLogger.info("H2FullPrunedBlockStore constructed");
+            PostgresFullPrunedBlockStore store = new PostgresFullPrunedBlockStore(netParams,
+                                                                                  235067,
+                                                                                  "localhost",
+                                                                                  "aie_bitcoin2",
+                                                                                  "aie_bitcoin",
+                                                                                  "aie_bitcoin");
+            slf4jLogger.info("PostgresFullPrunedBlockStore constructed");
 
             long oneDayAgo = (System.currentTimeMillis() / 1000L) - (86400 * 10);
 
             FullPrunedBlockChain blockChain = new FullPrunedBlockChain(netParams,
-                                                                       blockStore);
+                                                                       store);
             PeerGroup peerGroup = new PeerGroup(netParams, blockChain);
             // peerGroup.setFastCatchupTimeSecs(oneDayAgo);
             // peerGroup.setBloomFilterFalsePositiveRate(1.0); // TODO: does this matter for us?
