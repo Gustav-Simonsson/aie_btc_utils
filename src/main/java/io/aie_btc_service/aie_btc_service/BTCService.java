@@ -90,12 +90,12 @@ public class BTCService {
         Transaction t2 = getT2SA(aliceKey.getPubKey(), // giver
                                  bobKey.getPubKey(),   // taker
                                  myKey.getPubKey(),    // event key
-                                 new BigInteger("219900000")); // total bet amount (what winner gets)
+                                 new BigInteger("219000000")); // total bet amount (what winner gets)
 
         // Add inputs to T2 and create hashes for alice and bob to sign
         Postgres pg = new Postgres("localhost","aie_bitcoin2", "aie_bitcoin", "aie_bitcoin");
         OpenOutput aliceOO = pg.getOpenOutput(aliceKey.toAddress(netParams).toString());
-        OpenOutput bobOO   = pg.getOpenOutput(bobKey  .toAddress(netParams).toString());
+        OpenOutput bobOO   = pg.getOpenOutput(bobKey.toAddress(netParams).toString());
 
         TransactionOutPoint aliceT1OutPoint =
             new TransactionOutPoint(netParams, (long) aliceOO.index, new Sha256Hash(aliceOO.hash));
@@ -121,6 +121,8 @@ public class BTCService {
         slf4jLogger.info("aliceOO: " + aliceOO.value);
         slf4jLogger.info("bobOO: " + bobOO.value);
         slf4jLogger.info("t2: " + t2);
+
+        slf4jLogger.info("t2 serialized: " + DatatypeConverter.printHexBinary(t2.bitcoinSerialize()));
 
 
         //*/
@@ -198,7 +200,7 @@ public class BTCService {
         }
 
         t2.addInput(t1Output);
-        Sha256Hash sighash = t2.hashForSignature(inputCount, new Script(t1OutputScriptBytes), sigHashAll, false);
+        Sha256Hash sighash = t2.hashForSignature(inputCount, new Script(t1OutputScriptBytes), sigHashAll, true);
         return sighash;
     }
 
