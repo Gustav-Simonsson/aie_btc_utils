@@ -14,6 +14,8 @@ import com.google.bitcoin.core.PeerEventListener;
 import com.google.bitcoin.core.PeerGroup;
 
 import com.google.bitcoin.core.AddressFormatException;
+
+import com.google.bitcoin.core.ECKey.ECDSASignature;
 import com.google.bitcoin.core.Sha256Hash;
 import com.google.bitcoin.core.Transaction;
 import com.google.bitcoin.core.Transaction.SigHash;
@@ -52,10 +54,13 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
 import java.math.BigInteger;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.List;
+
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
@@ -75,24 +80,74 @@ public class BTCService {
         slf4jLogger.info("starting...");
 
         // add harcoded testnet priv keys here for testing
-        ECKey aliceKey = getECKeyFromWalletImportFormat("");
-        ECKey bobKey   = getECKeyFromWalletImportFormat("");
+        ECKey myKey = getECKeyFromWalletImportFormat("92r2FtYSQcqQMgzoXs3AzDAtu7Q3hgXmRD2HpcDM7g7UgArcxq6");
 
-        slf4jLogger.info("alice address: " + aliceKey.toAddress(netParams));
+        ECKey aliceKey = getECKeyFromWalletImportFormat("92pJFTW3srGK11RDeWkXqVv3H1MvWd2xeqkB8W2eWFaftsoRGNk");
+        ECKey bobKey = getECKeyFromWalletImportFormat("92SL8DDiEpTiaqWHtHufG8vW2wpZkwSrL3796oUDV6yaWLM3qnB");
 
+        ///*
+        // T2 Step A : "T2 without inputs, without signatures"
+        Transaction t2 = getT2SA(aliceKey.getPubKey(), // giver
+                                 bobKey.getPubKey(),   // taker
+                                 myKey.getPubKey(),    // event key
+                                 new BigInteger("219900000")); // total bet amount (what winner gets)
+
+        // Add inputs to T2 and create hashes for alice and bob to sign
+        Postgres pg = new Postgres("localhost","aie_bitcoin2", "aie_bitcoin", "aie_bitcoin");
+        OpenOutput aliceOO = pg.getOpenOutput(aliceKey.toAddress(netParams).toString());
+        OpenOutput bobOO   = pg.getOpenOutput(bobKey  .toAddress(netParams).toString());
+
+        TransactionOutPoint aliceT1OutPoint =
+            new TransactionOutPoint(netParams, (long) aliceOO.index, new Sha256Hash(aliceOO.hash));
+        TransactionOutPoint bobT1OutPoint =
+            new TransactionOutPoint(netParams, (long) bobOO.index,   new Sha256Hash(bobOO.hash));
+
+        TransactionInput aliceT1Input = new TransactionInput(netParams, null, new byte[]{}, aliceT1OutPoint);
+        TransactionInput bobT1Input   = new TransactionInput(netParams, null, new byte[]{}, bobT1OutPoint);
+
+        Sha256Hash t2HashForAlice = addInputToT2(t2, aliceT1Input, aliceOO.scriptbytes);
+        Sha256Hash t2HashForBob   = addInputToT2(t2, bobT1Input,   bobOO.scriptbytes);
+
+        // Signing, this will be done client-side in browser JS where privkey is available
+        TransactionSignature aliceSignature = new TransactionSignature(aliceKey.sign(t2HashForAlice), sigHashAll, true);
+        TransactionSignature bobSignature   = new TransactionSignature(bobKey.sign(t2HashForBob),     sigHashAll, true);
+
+        // NOTE: only pubkey part of aliceKey / bobKey is used here - which we have available in backend
+        t2.getInput(0).setScriptSig(ScriptBuilder.createInputScript(aliceSignature, aliceKey));
+        t2.getInput(1).setScriptSig(ScriptBuilder.createInputScript(bobSignature,   bobKey));
+
+        // t2 has the multisig output and inputs from alice and bob
+        t2.verify();
+        slf4jLogger.info("aliceOO: " + aliceOO.value);
+        slf4jLogger.info("bobOO: " + bobOO.value);
+        slf4jLogger.info("t2: " + t2);
+
+
+        //*/
+
+        /*
+        Transaction spendTx = getP2PKTx(myKey.toAddress(netParams),
+                                        bobKey.toAddress(netParams),
+                                        120000000l,
+                                        myKey);
+        slf4jLogger.info("spendTx: " + spendTx);
+
+        */
         // TODO: proper thread management, this is just for testing
-        new Thread(new BTCNode()).start();
-        try {
-            Thread.sleep(5000);
-        } catch (InterruptedException e) {
-            slf4jLogger.info("Interrupted :O...");
-        }
+        ///*
+         BTCNode node = new BTCNode();
+         new Thread(node).start();
+         try { Thread.sleep(5000); } catch (InterruptedException e) { slf4jLogger.info("Interrupted :O..."); }
 
+         try {node.peerGroup.broadcastTransaction(t2).get(); }
+         catch (ExecutionException ex) { slf4jLogger.info("uhoh :O..."); }
+         catch (InterruptedException ex2) { slf4jLogger.info("uhoh :O..."); }
+         //*/
         slf4jLogger.info("stopping...");
     }
 
     // Returns T2 without inputs and without signatures
-    public static Transaction getT2S1(byte[] giverPubKey,
+    public static Transaction getT2SA(byte[] giverPubKey,
                                       byte[] takerPubKey,
                                       byte[] eventPubKey,
                                       BigInteger SatoshiAmount
@@ -126,11 +181,9 @@ public class BTCService {
         return contractTx;
     }
 
-    public static TransactionAndSighash addInputToT2(Transaction t2,
-                                                     TransactionOutput t1Output,
-                                                     byte[] giverPubKey,
-                                                     byte[] takerPubKey
-                                                     ) {
+    public static Sha256Hash addInputToT2(Transaction t2,
+                                          TransactionInput t1Output,
+                                          byte[] t1OutputScriptBytes) {
         // Add input from either giver or taker
         // one of them can already be present and signed
         int outputCount    = t2.getOutputs().size();
@@ -144,34 +197,13 @@ public class BTCService {
             throw new RuntimeException("T2 does not have single output in T2 step 2: " + outputCount);
         }
 
-        /* Validations:
-           1. t1Output is a "normal" pay-to-address output
-           2. t1Output's address is from one of the pubkeys in t2's output
-           3. when we have two inputs to t2, they are each for one of the
-           t2 output pubkeys but NOT the for the same one
-        */
-        Script t1OutputScript = t1Output.getScriptPubKey();
-        if (!t1OutputScript.isSentToAddress()) {
-            throw new RuntimeException("t1Output is not DUP HASH160 EQUALVERIFY CHECKSIG");
-        }
-
-        Address t1toAddress = t1OutputScript.getToAddress(netParams);
-
-        if (!firstInput) {
-            Script secondInputScript = new Script(t2.getInput(0).getConnectedOutput().getScriptBytes());
-            Address secondInputToAddress = secondInputScript.getToAddress(netParams);
-            if (secondInputToAddress == t1toAddress)
-                throw new RuntimeException("second input to T2 cannot be same as first input");
-        }
-        checkMinimumAmount(t1Output.getValue(), "2"); // TODO: what multiple?
         t2.addInput(t1Output);
-        t2.setLockTime(1398617867 + (86400 * 10));
-        Sha256Hash sighash = t2.hashForSignature(inputCount, t1OutputScript, sigHashAll, false);
-        return new TransactionAndSighash(t2, sighash);
+        Sha256Hash sighash = t2.hashForSignature(inputCount, new Script(t1OutputScriptBytes), sigHashAll, false);
+        return sighash;
     }
 
     // Returns T3 unsigned
-    public static Transaction getT3(Transaction LockFundsTx,
+    public static Transaction getT3SA(Transaction LockFundsTx,
                                     Address receiverAddress) {
         Transaction spendTx = new Transaction(netParams);
         TransactionOutput multisigOutput = LockFundsTx.getOutput(0);
@@ -181,6 +213,35 @@ public class BTCService {
         BigInteger amount = multisigOutput.getValue();
         spendTx.addOutput(amount, receiverAddress);
         spendTx.addInput(multisigOutput);
+        return spendTx;
+    }
+
+    // Assumes single output available as input, TODO: make work for multiple?
+    // Assume there is enough amount in the output used as input
+    // TODO: proper fee handling
+    public static Transaction getP2PKTx(Address fromAddress,
+                                        Address toAddress,
+                                        long spendAmount,
+                                        ECKey signKey) {
+        Postgres pg = new Postgres("localhost","aie_bitcoin2", "aie_bitcoin", "aie_bitcoin");
+        OpenOutput oo = pg.getOpenOutput(fromAddress.toString());
+
+        TransactionOutPoint txOutPoint = new TransactionOutPoint(netParams, (long) oo.index, new Sha256Hash(oo.hash));
+        TransactionInput spendInput = new TransactionInput(netParams, null, new byte[]{}, txOutPoint);
+
+        Transaction spendTx = new Transaction(netParams);
+        spendTx.addInput(spendInput);
+
+        long amountAvailable = (long) (ByteBuffer.wrap(oo.value).getInt());
+        long fee = 2 * Transaction.REFERENCE_DEFAULT_MIN_TX_FEE.longValue();
+        long change = amountAvailable - spendAmount - fee;
+
+        spendTx.addOutput(BigInteger.valueOf(spendAmount), toAddress);
+        spendTx.addOutput(BigInteger.valueOf(change), fromAddress);
+         TransactionSignature txSign =
+            spendTx.calculateSignature(0, signKey, new Script(oo.scriptbytes), sigHashAll, false);
+        spendTx.getInput(0).setScriptSig(ScriptBuilder.createInputScript(txSign, signKey));
+        spendTx.verify();
         return spendTx;
     }
 

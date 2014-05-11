@@ -52,6 +52,8 @@ public class BTCNode implements Runnable {
         LoggerFactory.getLogger(BTCNode.class);
     public static final TestNet3Params netParams = new TestNet3Params();
 
+    public PeerGroup peerGroup;
+
     public void run() {
         slf4jLogger.info("starting AIE bitcoinj node...");
 
@@ -68,7 +70,7 @@ public class BTCNode implements Runnable {
 
             FullPrunedBlockChain blockChain = new FullPrunedBlockChain(netParams,
                                                                        store);
-            PeerGroup peerGroup = new PeerGroup(netParams, blockChain);
+            peerGroup = new PeerGroup(netParams, blockChain);
             // peerGroup.setFastCatchupTimeSecs(oneDayAgo);
             // peerGroup.setBloomFilterFalsePositiveRate(1.0); // TODO: does this matter for us?
             peerGroup.addPeerDiscovery(new DnsDiscovery(netParams));
