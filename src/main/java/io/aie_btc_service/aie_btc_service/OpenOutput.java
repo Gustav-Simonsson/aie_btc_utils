@@ -28,4 +28,8 @@ public class OpenOutput {
         //this.toaddress = toa;
         //this.addresstargetable = at;
     }
+
+    public Sha256Hash getShaHash() {
+        return new Sha256Hash(hash);
+    }
 }

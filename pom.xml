@@ -12,42 +12,55 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <mockito.version>1.9.5</mockito.version>
+    <junit.version>4.11</junit.version>
+    <bitcoinj.version>0.11</bitcoinj.version>
+    <bitcoinj-tools.version>0.11</bitcoinj-tools.version>
+    <slf4j-api.version>1.7.6</slf4j-api.version>
+    <slf4j-api-jdk14.version>1.7.6</slf4j-api-jdk14.version>
+    <postgresesql.version>9.2-1002-jdbc4</postgresesql.version>
   </properties>
 
   <dependencies>
     <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>3.8.1</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>com.google</groupId>
       <artifactId>bitcoinj</artifactId>
-      <version>0.11</version>
+      <version>${bitcoinj.version}</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>com.google</groupId>
       <artifactId>bitcoinj-tools</artifactId>
-      <version>0.11</version>
+      <version>${bitcoinj-tools.version}</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-      <version>1.7.6</version>
+      <version>${slf4j-api.version}</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-jdk14</artifactId>
-      <version>1.7.6</version>
+      <version>${slf4j-api-jdk14.version}</version>
     </dependency>
     <dependency>
       <groupId>org.postgresql</groupId>
       <artifactId>postgresql</artifactId>
-      <version>9.2-1002-jdbc4</version>
+      <version>${postgresesql.version}</version>
     </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+        <artifactId>mockito-core</artifactId>
+        <version>${mockito.version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+          <groupId>junit</groupId>
+          <artifactId>junit</artifactId>
+          <version>${junit.version}</version>
+          <scope>test</scope>
+      </dependency>
   </dependencies>
   <build>
     <plugins>
