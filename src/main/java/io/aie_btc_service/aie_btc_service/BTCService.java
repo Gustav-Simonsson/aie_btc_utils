@@ -1,71 +1,35 @@
 package io.aie_btc_service.aie_btc_service;
 
 import com.google.bitcoin.core.Address;
-import com.google.bitcoin.core.Block;
-import com.google.bitcoin.core.BlockChain;
-import com.google.bitcoin.core.CheckpointManager;
 
 import com.google.bitcoin.core.DumpedPrivateKey;
 import com.google.bitcoin.core.ECKey;
-import com.google.bitcoin.core.GetDataMessage;
-import com.google.bitcoin.core.Message;
-import com.google.bitcoin.core.Peer;
-import com.google.bitcoin.core.PeerEventListener;
-import com.google.bitcoin.core.PeerGroup;
 
 import com.google.bitcoin.core.AddressFormatException;
 
-import com.google.bitcoin.core.ECKey.ECDSASignature;
 import com.google.bitcoin.core.Sha256Hash;
 import com.google.bitcoin.core.Transaction;
 import com.google.bitcoin.core.Transaction.SigHash;
 import com.google.bitcoin.core.TransactionInput;
 import com.google.bitcoin.core.TransactionOutPoint;
 import com.google.bitcoin.core.TransactionOutput;
-import com.google.bitcoin.core.Utils;
-import com.google.bitcoin.core.Wallet;
 
 import com.google.bitcoin.crypto.TransactionSignature;
 
-import com.google.bitcoin.net.discovery.DnsDiscovery;
-import com.google.bitcoin.net.discovery.PeerDiscovery;
-import com.google.bitcoin.params.MainNetParams;
-import com.google.bitcoin.params.TestNet2Params;
 import com.google.bitcoin.params.TestNet3Params;
 import com.google.bitcoin.script.Script;
 import com.google.bitcoin.script.ScriptBuilder;
-import com.google.bitcoin.store.BlockStoreException;
-import com.google.bitcoin.store.SPVBlockStore;
-import com.google.bitcoin.store.UnreadableWalletException;
-import com.google.bitcoin.uri.BitcoinURI;
 import com.google.bitcoin.utils.BriefLogFormatter;
 import com.google.common.collect.ImmutableList;
 
-import net.jcip.annotations.Immutable;
-
-import org.h2.value.Transfer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.spongycastle.util.encoders.Hex;
-import org.spongycastle.crypto.digests.ShortenedDigest;
-
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.math.BigInteger;
-import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
 import java.util.List;
 
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.lang.reflect.Array;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
-import java.util.HashMap;
 
 import javax.xml.bind.DatatypeConverter;
 
@@ -98,9 +62,9 @@ public class BTCService {
         OpenOutput bobOO   = pg.getOpenOutput(bobKey.toAddress(netParams).toString());
 
         TransactionOutPoint aliceT1OutPoint =
-            new TransactionOutPoint(netParams, (long) aliceOO.index, new Sha256Hash(aliceOO.hash));
+            new TransactionOutPoint(netParams, (long) aliceOO.index, aliceOO.getShaHash());
         TransactionOutPoint bobT1OutPoint =
-            new TransactionOutPoint(netParams, (long) bobOO.index,   new Sha256Hash(bobOO.hash));
+            new TransactionOutPoint(netParams, (long) bobOO.index,   bobOO.getShaHash());
 
         TransactionInput aliceT1Input = new TransactionInput(netParams, null, new byte[]{}, aliceT1OutPoint);
         TransactionInput bobT1Input   = new TransactionInput(netParams, null, new byte[]{}, bobT1OutPoint);
