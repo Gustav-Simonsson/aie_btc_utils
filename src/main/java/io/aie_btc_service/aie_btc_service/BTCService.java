@@ -1,150 +1,94 @@
 package io.aie_btc_service.aie_btc_service;
 
 import com.google.bitcoin.core.Address;
-import com.google.bitcoin.core.Block;
-import com.google.bitcoin.core.BlockChain;
-import com.google.bitcoin.core.CheckpointManager;
 
 import com.google.bitcoin.core.DumpedPrivateKey;
 import com.google.bitcoin.core.ECKey;
-import com.google.bitcoin.core.GetDataMessage;
-import com.google.bitcoin.core.Message;
-import com.google.bitcoin.core.Peer;
-import com.google.bitcoin.core.PeerEventListener;
-import com.google.bitcoin.core.PeerGroup;
 
 import com.google.bitcoin.core.AddressFormatException;
 
-import com.google.bitcoin.core.ECKey.ECDSASignature;
 import com.google.bitcoin.core.Sha256Hash;
 import com.google.bitcoin.core.Transaction;
 import com.google.bitcoin.core.Transaction.SigHash;
 import com.google.bitcoin.core.TransactionInput;
 import com.google.bitcoin.core.TransactionOutPoint;
 import com.google.bitcoin.core.TransactionOutput;
-import com.google.bitcoin.core.Utils;
-import com.google.bitcoin.core.Wallet;
 
 import com.google.bitcoin.crypto.TransactionSignature;
 
-import com.google.bitcoin.net.discovery.DnsDiscovery;
-import com.google.bitcoin.net.discovery.PeerDiscovery;
-import com.google.bitcoin.params.MainNetParams;
-import com.google.bitcoin.params.TestNet2Params;
 import com.google.bitcoin.params.TestNet3Params;
 import com.google.bitcoin.script.Script;
 import com.google.bitcoin.script.ScriptBuilder;
-import com.google.bitcoin.store.BlockStoreException;
-import com.google.bitcoin.store.SPVBlockStore;
-import com.google.bitcoin.store.UnreadableWalletException;
-import com.google.bitcoin.uri.BitcoinURI;
 import com.google.bitcoin.utils.BriefLogFormatter;
 import com.google.common.collect.ImmutableList;
 
-import net.jcip.annotations.Immutable;
-
-import org.h2.value.Transfer;
+import io.aie_btc_service.aie_btc_service.transaction.T2ContractTransaction;
+import io.aie_btc_service.aie_btc_service.transaction.UserKeys;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.spongycastle.util.encoders.Hex;
-import org.spongycastle.crypto.digests.ShortenedDigest;
-
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.math.BigInteger;
-import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
 import java.util.List;
 
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.lang.reflect.Array;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
-import java.util.HashMap;
 
 import javax.xml.bind.DatatypeConverter;
 
 public class BTCService {
     public static final Logger slf4jLogger =
-        LoggerFactory.getLogger(BTCService.class);
+            LoggerFactory.getLogger(BTCService.class);
     public static final TestNet3Params netParams = new TestNet3Params();
     public static final SigHash sigHashAll = Transaction.SigHash.ALL;
 
     public static void main(String[] args) {
         BriefLogFormatter.init();
         slf4jLogger.info("starting...");
-
-        // add harcoded testnet priv keys here for testing
-        ECKey myKey = getECKeyFromWalletImportFormat("92r2FtYSQcqQMgzoXs3AzDAtu7Q3hgXmRD2HpcDM7g7UgArcxq6");
-
-        ECKey aliceKey = getECKeyFromWalletImportFormat("92pJFTW3srGK11RDeWkXqVv3H1MvWd2xeqkB8W2eWFaftsoRGNk");
-        ECKey bobKey = getECKeyFromWalletImportFormat("92SL8DDiEpTiaqWHtHufG8vW2wpZkwSrL3796oUDV6yaWLM3qnB");
-
-        ///*
-        // T2 Step A : "T2 without inputs, without signatures"
-        Transaction t2 = getT2SA(aliceKey.getPubKey(), // giver
-                                 bobKey.getPubKey(),   // taker
-                                 myKey.getPubKey(),    // event key
-                                 new BigInteger("219000000")); // total bet amount (what winner gets)
-
-        // Add inputs to T2 and create hashes for alice and bob to sign
         Postgres pg = new Postgres("localhost","aie_bitcoin2", "aie_bitcoin", "aie_bitcoin");
-        OpenOutput aliceOO = pg.getOpenOutput(aliceKey.toAddress(netParams).toString());
-        OpenOutput bobOO   = pg.getOpenOutput(bobKey.toAddress(netParams).toString());
 
-        TransactionOutPoint aliceT1OutPoint =
-            new TransactionOutPoint(netParams, (long) aliceOO.index, new Sha256Hash(aliceOO.hash));
-        TransactionOutPoint bobT1OutPoint =
-            new TransactionOutPoint(netParams, (long) bobOO.index,   new Sha256Hash(bobOO.hash));
+        UserKeys oracleUserKey = new UserKeys("oracle", "92r2FtYSQcqQMgzoXs3AzDAtu7Q3hgXmRD2HpcDM7g7UgArcxq6", pg);
+        UserKeys aliceUserKeys = new UserKeys("alice", "92pJFTW3srGK11RDeWkXqVv3H1MvWd2xeqkB8W2eWFaftsoRGNk", pg);
+        UserKeys bobUserKeys = new UserKeys("bob", "92SL8DDiEpTiaqWHtHufG8vW2wpZkwSrL3796oUDV6yaWLM3qnB", pg);
 
-        TransactionInput aliceT1Input = new TransactionInput(netParams, null, new byte[]{}, aliceT1OutPoint);
-        TransactionInput bobT1Input   = new TransactionInput(netParams, null, new byte[]{}, bobT1OutPoint);
+        Transaction t2 = getT2SA(aliceUserKeys.getPubKey(),
+                bobUserKeys.getPubKey(),
+                oracleUserKey.getPubKey(),
+                new BigInteger("2190000000"));
 
-        Sha256Hash t2HashForAlice = addInputToT2(t2, aliceT1Input, aliceOO.scriptbytes);
-        Sha256Hash t2HashForBob   = addInputToT2(t2, bobT1Input,   bobOO.scriptbytes);
+        T2ContractTransaction t2Transaction = new T2ContractTransaction(t2, aliceUserKeys.getOpenOutput(), bobUserKeys.getOpenOutput());
+
+        TransactionInput aliceT1Input = new TransactionInput(netParams, null, new byte[]{}, aliceUserKeys.getTransactionOutPoint());
+        TransactionInput bobT1Input   = new TransactionInput(netParams, null, new byte[]{}, bobUserKeys.getTransactionOutPoint());
+
+        t2Transaction.setFirstTransactionInput(aliceT1Input);
+        t2Transaction.setSecondTransactionInput(bobT1Input);
 
         // Signing, this will be done client-side in browser JS where privkey is available
-        TransactionSignature aliceSignature = new TransactionSignature(aliceKey.sign(t2HashForAlice), sigHashAll, true);
-        TransactionSignature bobSignature   = new TransactionSignature(bobKey.sign(t2HashForBob),     sigHashAll, true);
+        TransactionSignature aliceSignature = new TransactionSignature(aliceUserKeys.getEcKey().sign(t2Transaction.getHashForFirstInputTransaction()), sigHashAll, true);
+        TransactionSignature bobSignature   = new TransactionSignature(bobUserKeys.getEcKey().sign(t2Transaction.getHashForSecondInputTransaction()),     sigHashAll, true);
 
         // NOTE: only pubkey part of aliceKey / bobKey is used here - which we have available in backend
-        t2.getInput(0).setScriptSig(ScriptBuilder.createInputScript(aliceSignature, aliceKey));
-        t2.getInput(1).setScriptSig(ScriptBuilder.createInputScript(bobSignature,   bobKey));
+        t2.getInput(0).setScriptSig(ScriptBuilder.createInputScript(aliceSignature, aliceUserKeys.getEcKey()));
+        t2.getInput(1).setScriptSig(ScriptBuilder.createInputScript(bobSignature,   bobUserKeys.getEcKey()));
 
         // t2 has the multisig output and inputs from alice and bob
         t2.verify();
-        slf4jLogger.info("aliceOO: " + aliceOO.value);
-        slf4jLogger.info("bobOO: " + bobOO.value);
+        slf4jLogger.info("aliceOO: " + aliceUserKeys.getOpenOutput().value);
+        slf4jLogger.info("bobOO: " + bobUserKeys.getOpenOutput().value);
         slf4jLogger.info("t2: " + t2);
 
         slf4jLogger.info("t2 serialized: " + DatatypeConverter.printHexBinary(t2.bitcoinSerialize()));
 
-
-        //*/
-
-        /*
-        Transaction spendTx = getP2PKTx(myKey.toAddress(netParams),
-                                        bobKey.toAddress(netParams),
-                                        120000000l,
-                                        myKey);
-        slf4jLogger.info("spendTx: " + spendTx);
-
-        */
         // TODO: proper thread management, this is just for testing
         ///*
-         BTCNode node = new BTCNode();
-         new Thread(node).start();
-         try { Thread.sleep(5000); } catch (InterruptedException e) { slf4jLogger.info("Interrupted :O..."); }
+        BTCNode node = new BTCNode();
+        new Thread(node).start();
+        try { Thread.sleep(5000); } catch (InterruptedException e) { slf4jLogger.info("Interrupted :O..."); }
 
-         try {node.peerGroup.broadcastTransaction(t2).get(); }
-         catch (ExecutionException ex) { slf4jLogger.info("uhoh :O..."); }
-         catch (InterruptedException ex2) { slf4jLogger.info("uhoh :O..."); }
-         //*/
+        try {node.peerGroup.broadcastTransaction(t2).get(); }
+        catch (ExecutionException ex) { slf4jLogger.info("uhoh :O..."); }
+        catch (InterruptedException ex2) { slf4jLogger.info("uhoh :O..."); }
+        //*/
         slf4jLogger.info("stopping...");
     }
 
@@ -153,20 +97,20 @@ public class BTCService {
                                       byte[] takerPubKey,
                                       byte[] eventPubKey,
                                       BigInteger SatoshiAmount
-                                      ) {
+    ) {
         /* Validations:
            1. Each pubkey is a different one
            2. The amount in satoshis is sufficiently bigger than dust amount
          */
         checkMinimumAmount(SatoshiAmount, "10"); // TODO: what multiple?
         if ((giverPubKey == takerPubKey)  ||
-            (giverPubKey == eventPubKey)  ||
-            (takerPubKey == eventPubKey)) {
+                (giverPubKey == eventPubKey)  ||
+                (takerPubKey == eventPubKey)) {
             throw new RuntimeException("giver, taker, event pubkeys " +
-                                       "not unique: " +
-                                       giverPubKey + ", " +
-                                       takerPubKey + ", " +
-                                       eventPubKey);
+                    "not unique: " +
+                    giverPubKey + ", " +
+                    takerPubKey + ", " +
+                    eventPubKey);
         }
         // NOTE: These ECKeys contain only the public part of the EC key pair.
         ECKey giverKey = new ECKey(null, giverPubKey);
@@ -206,7 +150,7 @@ public class BTCService {
 
     // Returns T3 unsigned
     public static Transaction getT3SA(Transaction LockFundsTx,
-                                    Address receiverAddress) {
+                                      Address receiverAddress) {
         Transaction spendTx = new Transaction(netParams);
         TransactionOutput multisigOutput = LockFundsTx.getOutput(0);
         // TODO: validate output, amount
@@ -240,8 +184,8 @@ public class BTCService {
 
         spendTx.addOutput(BigInteger.valueOf(spendAmount), toAddress);
         spendTx.addOutput(BigInteger.valueOf(change), fromAddress);
-         TransactionSignature txSign =
-            spendTx.calculateSignature(0, signKey, new Script(oo.scriptbytes), sigHashAll, false);
+        TransactionSignature txSign =
+                spendTx.calculateSignature(0, signKey, new Script(oo.scriptbytes), sigHashAll, false);
         spendTx.getInput(0).setScriptSig(ScriptBuilder.createInputScript(txSign, signKey));
         spendTx.verify();
         return spendTx;
