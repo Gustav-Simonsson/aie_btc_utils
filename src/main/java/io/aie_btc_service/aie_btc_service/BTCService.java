@@ -85,7 +85,11 @@ public class BTCService {
         ECKey aliceKey = getECKeyFromWalletImportFormat("92pJFTW3srGK11RDeWkXqVv3H1MvWd2xeqkB8W2eWFaftsoRGNk");
         ECKey bobKey = getECKeyFromWalletImportFormat("92SL8DDiEpTiaqWHtHufG8vW2wpZkwSrL3796oUDV6yaWLM3qnB");
 
-        ///*
+        slf4jLogger.info("myPubKey: " + DatatypeConverter.printHexBinary(myKey.getPubKey()));
+        slf4jLogger.info("alicePubKey: " + DatatypeConverter.printHexBinary(aliceKey.getPubKey()));
+        slf4jLogger.info("bobPubKey: " + DatatypeConverter.printHexBinary(bobKey.getPubKey()));
+
+        /*
         // T2 Step A : "T2 without inputs, without signatures"
         Transaction t2 = getT2SA(aliceKey.getPubKey(), // giver
                                  bobKey.getPubKey(),   // taker
@@ -124,9 +128,28 @@ public class BTCService {
 
         slf4jLogger.info("t2 serialized: " + DatatypeConverter.printHexBinary(t2.bitcoinSerialize()));
 
-
         //*/
 
+        // In normal operation, these will come from Postgres, here we hardcode them
+        Sha256Hash t2Hash = new Sha256Hash("71F3900D51DBB6AA4C96A795684D561120DD3E3F400CD56FFF803B353A5AFC88");
+        String t2MultisigOutputScriptBytesString = "0102410457A6E187AF6DCAD28F678A92850610504AA64685B4D6F60CBC30C1A1407A0CE03DF1D51102EB09ACA7CA6DF77C06FE3EF6054E2EE9DAC7B5AC849F6E5C026B734104F37DF2954632C965C828DF1C09DCF70002861A981789D9DF20600987DCB3975A7DB3C2AD87B875D31103D7FFE43DED752CF1393A68053A5D0EC4061116AE553F4104B0024CC9260F4200147598408624A7B55839F75249DA160A1906DEAEC006FDCB802B9A72D06F5E9EBC6CC108704E3789B8C515746022864E86457D96D8E116BF0103AE";
+        byte[] t2MultisigOutputScriptBytes = DatatypeConverter.parseHexBinary(t2MultisigOutputScriptBytesString);
+        TransactionOutPoint t2MultisigOutPoint = new TransactionOutPoint(netParams, 0, t2Hash);
+        TransactionInput t3Input = new TransactionInput(netParams, null, new byte[]{}, t2MultisigOutPoint);
+        Transaction t3 = new Transaction(netParams);
+        t3.addInput(t3Input);
+        t3.addOutput(new BigInteger("218000000"), aliceKey.toAddress(netParams)); // big miner's fee for simplicity :)
+        Script inputScript = new Script(t2MultisigOutputScriptBytes);
+        Sha256Hash t3Sighash = t3.hashForSignature(0, inputScript, sigHashAll, false);
+        TransactionSignature aliceSignature = new TransactionSignature(aliceKey.sign(t3Sighash), sigHashAll, false);
+        TransactionSignature bobSignature   = new TransactionSignature(bobKey.sign(t3Sighash),   sigHashAll, false);
+        List<TransactionSignature> signatures = ImmutableList.of(aliceSignature, bobSignature);
+        t3.getInput(0).setScriptSig(ScriptBuilder.createMultiSigInputScript(signatures));
+        t3.verify();
+        slf4jLogger.info("t2hash: " + t2Hash);
+        slf4jLogger.info("inputScript: " + inputScript);
+        slf4jLogger.info("t3: " + t3);
+        slf4jLogger.info("t3 bytes: " + DatatypeConverter.printHexBinary(t3.bitcoinSerialize()));
         /*
         Transaction spendTx = getP2PKTx(myKey.toAddress(netParams),
                                         bobKey.toAddress(netParams),
@@ -141,7 +164,8 @@ public class BTCService {
          new Thread(node).start();
          try { Thread.sleep(5000); } catch (InterruptedException e) { slf4jLogger.info("Interrupted :O..."); }
 
-         try {node.peerGroup.broadcastTransaction(t2).get(); }
+         ///*
+         try {node.peerGroup.broadcastTransaction(t3).get(); }
          catch (ExecutionException ex) { slf4jLogger.info("uhoh :O..."); }
          catch (InterruptedException ex2) { slf4jLogger.info("uhoh :O..."); }
          //*/
@@ -202,20 +226,6 @@ public class BTCService {
         t2.addInput(t1Output);
         Sha256Hash sighash = t2.hashForSignature(inputCount, new Script(t1OutputScriptBytes), sigHashAll, true);
         return sighash;
-    }
-
-    // Returns T3 unsigned
-    public static Transaction getT3SA(Transaction LockFundsTx,
-                                    Address receiverAddress) {
-        Transaction spendTx = new Transaction(netParams);
-        TransactionOutput multisigOutput = LockFundsTx.getOutput(0);
-        // TODO: validate output, amount
-        // Script multisigScript = multisigOutput.getScriptPubKey();
-        // TODO: Add default miner fee?
-        BigInteger amount = multisigOutput.getValue();
-        spendTx.addOutput(amount, receiverAddress);
-        spendTx.addInput(multisigOutput);
-        return spendTx;
     }
 
     // Assumes single output available as input, TODO: make work for multiple?

@@ -10,6 +10,8 @@ import com.google.bitcoin.core.FullPrunedBlockChain;
 import com.google.bitcoin.core.GetDataMessage;
 import com.google.bitcoin.core.Message;
 import com.google.bitcoin.core.Peer;
+
+import com.google.bitcoin.core.PeerAddress;
 import com.google.bitcoin.core.PeerEventListener;
 import com.google.bitcoin.core.PeerGroup;
 import com.google.bitcoin.core.Transaction;
@@ -37,6 +39,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.List;
@@ -73,7 +76,24 @@ public class BTCNode implements Runnable {
             peerGroup = new PeerGroup(netParams, blockChain);
             // peerGroup.setFastCatchupTimeSecs(oneDayAgo);
             // peerGroup.setBloomFilterFalsePositiveRate(1.0); // TODO: does this matter for us?
-            peerGroup.addPeerDiscovery(new DnsDiscovery(netParams));
+
+            InetAddress ia = null;
+            InetAddress ia2 = null;
+            InetAddress ia3 = null;
+            InetAddress ia4 = null;
+            try {
+                ia  = InetAddress.getByName("54.243.211.176");
+                ia2 = InetAddress.getByName("148.251.6.214");
+                ia3 = InetAddress.getByName("188.226.139.138");
+                ia4 = InetAddress.getByName("144.76.165.115");
+            } catch (UnknownHostException e){ slf4jLogger.error("omg :O " + e);};
+            peerGroup.addAddress(new PeerAddress(ia, 18333));
+            peerGroup.addAddress(new PeerAddress(ia2, 18333));
+            peerGroup.addAddress(new PeerAddress(ia3, 18333));
+            peerGroup.addAddress(new PeerAddress(ia4, 18333));
+
+            // new String[]{"testnet-seed.bluematt.me"},
+            // peerGroup.addPeerDiscovery(new DnsDiscovery(netParams));
             slf4jLogger.info("Starting peerGroup ...");
             peerGroup.startAndWait();
             PeerEventListener listener = new TxListener2();
