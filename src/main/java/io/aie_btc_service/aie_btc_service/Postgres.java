@@ -2,16 +2,14 @@ package io.aie_btc_service.aie_btc_service;
 
 import com.google.bitcoin.core.*;
 import com.google.bitcoin.script.Script;
-
 import com.google.bitcoin.core.Sha256Hash;
+import com.google.bitcoin.core.StoredTransactionOutput;
 import com.google.bitcoin.core.Transaction;
 import com.google.bitcoin.core.TransactionOutPoint;
 import com.google.bitcoin.core.TransactionOutput;
-
 import com.google.bitcoin.params.MainNetParams;
 import com.google.bitcoin.params.TestNet2Params;
 import com.google.bitcoin.params.TestNet3Params;
-
 import com.google.common.collect.Lists;
 
 import org.slf4j.Logger;
@@ -93,6 +91,33 @@ public class Postgres {
                     s.close();
                 } catch (SQLException ex2) {
                     log.error("SQLException :O " + ex2);
+                }
+        }
+    }
+
+    public void insertOpenOutput(StoredTransactionOutput out) {
+        maybeConnect();
+        PreparedStatement s = null;
+        try {
+            s = conn.get().prepareStatement("INSERT INTO openOutputs (hash, index, height, value, scriptBytes, toAddress, addressTargetable) " +
+                    "VALUES (?, ?, ?, ?, ?, NULL, NULL)");
+            s.setBytes(1, out.getHash().getBytes());
+            s.setInt(2, (int)out.getIndex()); // index is actually an unsigned int
+            s.setInt(3, out.getHeight());
+            s.setBytes(4, out.getValue().toByteArray());
+            s.setBytes(5, out.getScriptBytes());
+            s.executeUpdate();
+            s.close();
+        } catch (SQLException e) {
+            log.error("SQLException :O " + e);
+            return;
+        } finally {
+            if (s != null)
+                try {
+                    s.close();
+                } catch (SQLException e) {
+                    log.error("SQLException :O " + e);
+                    return;
                 }
         }
     }

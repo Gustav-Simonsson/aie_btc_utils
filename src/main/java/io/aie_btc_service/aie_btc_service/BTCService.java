@@ -4,7 +4,6 @@ import com.google.bitcoin.core.Address;
 import com.google.bitcoin.core.Block;
 import com.google.bitcoin.core.BlockChain;
 import com.google.bitcoin.core.CheckpointManager;
-
 import com.google.bitcoin.core.DumpedPrivateKey;
 import com.google.bitcoin.core.ECKey;
 import com.google.bitcoin.core.GetDataMessage;
@@ -12,11 +11,10 @@ import com.google.bitcoin.core.Message;
 import com.google.bitcoin.core.Peer;
 import com.google.bitcoin.core.PeerEventListener;
 import com.google.bitcoin.core.PeerGroup;
-
 import com.google.bitcoin.core.AddressFormatException;
-
 import com.google.bitcoin.core.ECKey.ECDSASignature;
 import com.google.bitcoin.core.Sha256Hash;
+import com.google.bitcoin.core.StoredTransactionOutput;
 import com.google.bitcoin.core.Transaction;
 import com.google.bitcoin.core.Transaction.SigHash;
 import com.google.bitcoin.core.TransactionInput;
@@ -24,9 +22,7 @@ import com.google.bitcoin.core.TransactionOutPoint;
 import com.google.bitcoin.core.TransactionOutput;
 import com.google.bitcoin.core.Utils;
 import com.google.bitcoin.core.Wallet;
-
 import com.google.bitcoin.crypto.TransactionSignature;
-
 import com.google.bitcoin.net.discovery.DnsDiscovery;
 import com.google.bitcoin.net.discovery.PeerDiscovery;
 import com.google.bitcoin.params.MainNetParams;
@@ -46,7 +42,6 @@ import net.jcip.annotations.Immutable;
 import org.h2.value.Transfer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.spongycastle.util.encoders.Hex;
 import org.spongycastle.crypto.digests.ShortenedDigest;
 
@@ -59,7 +54,6 @@ import java.math.BigInteger;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.List;
-
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.lang.reflect.Array;
@@ -81,20 +75,22 @@ public class BTCService {
 
         // add harcoded testnet priv keys here for testing
         ECKey myKey = getECKeyFromWalletImportFormat("92r2FtYSQcqQMgzoXs3AzDAtu7Q3hgXmRD2HpcDM7g7UgArcxq6");
-
         ECKey aliceKey = getECKeyFromWalletImportFormat("92pJFTW3srGK11RDeWkXqVv3H1MvWd2xeqkB8W2eWFaftsoRGNk");
         ECKey bobKey = getECKeyFromWalletImportFormat("92SL8DDiEpTiaqWHtHufG8vW2wpZkwSrL3796oUDV6yaWLM3qnB");
 
         slf4jLogger.info("myPubKey: " + DatatypeConverter.printHexBinary(myKey.getPubKey()));
+        slf4jLogger.info("myAddress: " + myKey.toAddress(netParams));
         slf4jLogger.info("alicePubKey: " + DatatypeConverter.printHexBinary(aliceKey.getPubKey()));
+        slf4jLogger.info("aliceAddress: " + aliceKey.toAddress(netParams));
         slf4jLogger.info("bobPubKey: " + DatatypeConverter.printHexBinary(bobKey.getPubKey()));
+        slf4jLogger.info("bobAddress: " + bobKey.toAddress(netParams));
 
         /*
         // T2 Step A : "T2 without inputs, without signatures"
         Transaction t2 = getT2SA(aliceKey.getPubKey(), // giver
                                  bobKey.getPubKey(),   // taker
                                  myKey.getPubKey(),    // event key
-                                 new BigInteger("219000000")); // total bet amount (what winner gets)
+                                 new BigInteger("279000000")); // total bet amount (what winner gets)
 
         // Add inputs to T2 and create hashes for alice and bob to sign
         Postgres pg = new Postgres("localhost","aie_bitcoin2", "aie_bitcoin", "aie_bitcoin");
@@ -120,25 +116,30 @@ public class BTCService {
         t2.getInput(0).setScriptSig(ScriptBuilder.createInputScript(aliceSignature, aliceKey));
         t2.getInput(1).setScriptSig(ScriptBuilder.createInputScript(bobSignature,   bobKey));
 
+        StoredTransactionOutput sout = new StoredTransactionOutput(t2.getHash(), t2.getOutput(0), 0, false);
+        slf4jLogger.info("sout value: " + DatatypeConverter.printHexBinary(sout.getValue().toByteArray()));
+        pg.insertOpenOutput(sout);
+
         // t2 has the multisig output and inputs from alice and bob
         t2.verify();
         slf4jLogger.info("aliceOO: " + aliceOO.value);
         slf4jLogger.info("bobOO: " + bobOO.value);
         slf4jLogger.info("t2: " + t2);
-
+        slf4jLogger.info("t2 output scriptPubKeyBytes: " + DatatypeConverter.printHexBinary(t2.getOutput(0).getScriptBytes()));
         slf4jLogger.info("t2 serialized: " + DatatypeConverter.printHexBinary(t2.bitcoinSerialize()));
 
         //*/
 
+        ///*
         // In normal operation, these will come from Postgres, here we hardcode them
-        Sha256Hash t2Hash = new Sha256Hash("71F3900D51DBB6AA4C96A795684D561120DD3E3F400CD56FFF803B353A5AFC88");
-        String t2MultisigOutputScriptBytesString = "0102410457A6E187AF6DCAD28F678A92850610504AA64685B4D6F60CBC30C1A1407A0CE03DF1D51102EB09ACA7CA6DF77C06FE3EF6054E2EE9DAC7B5AC849F6E5C026B734104F37DF2954632C965C828DF1C09DCF70002861A981789D9DF20600987DCB3975A7DB3C2AD87B875D31103D7FFE43DED752CF1393A68053A5D0EC4061116AE553F4104B0024CC9260F4200147598408624A7B55839F75249DA160A1906DEAEC006FDCB802B9A72D06F5E9EBC6CC108704E3789B8C515746022864E86457D96D8E116BF0103AE";
+        Sha256Hash t2Hash = new Sha256Hash("866cbe1e7ee2cc38b65f7584a72fcb60e0f41a3b15a0934a72c63c52bee48ef2");
+        String t2MultisigOutputScriptBytesString = "52410457a6e187af6dcad28f678a92850610504aa64685b4d6f60cbc30c1a1407a0ce03df1d51102eb09aca7ca6df77c06fe3ef6054e2ee9dac7b5ac849f6e5c026b734104f37df2954632c965c828df1c09dcf70002861a981789d9df20600987dcb3975a7db3c2ad87b875d31103d7ffe43ded752cf1393a68053a5d0ec4061116ae553f4104b0024cc9260f4200147598408624a7b55839f75249da160a1906deaec006fdcb802b9a72d06f5e9ebc6cc108704e3789b8c515746022864e86457d96d8e116bf53ae";
         byte[] t2MultisigOutputScriptBytes = DatatypeConverter.parseHexBinary(t2MultisigOutputScriptBytesString);
         TransactionOutPoint t2MultisigOutPoint = new TransactionOutPoint(netParams, 0, t2Hash);
         TransactionInput t3Input = new TransactionInput(netParams, null, new byte[]{}, t2MultisigOutPoint);
         Transaction t3 = new Transaction(netParams);
         t3.addInput(t3Input);
-        t3.addOutput(new BigInteger("218000000"), aliceKey.toAddress(netParams)); // big miner's fee for simplicity :)
+        t3.addOutput(new BigInteger("270000000"), aliceKey.toAddress(netParams)); // big miner's fee for simplicity :)
         Script inputScript = new Script(t2MultisigOutputScriptBytes);
         Sha256Hash t3Sighash = t3.hashForSignature(0, inputScript, sigHashAll, false);
         TransactionSignature aliceSignature = new TransactionSignature(aliceKey.sign(t3Sighash), sigHashAll, false);
@@ -157,7 +158,7 @@ public class BTCService {
                                         myKey);
         slf4jLogger.info("spendTx: " + spendTx);
 
-        */
+        //*/
         // TODO: proper thread management, this is just for testing
         ///*
          BTCNode node = new BTCNode();
