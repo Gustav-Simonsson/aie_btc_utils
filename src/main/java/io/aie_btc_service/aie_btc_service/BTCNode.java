@@ -62,11 +62,11 @@ public class BTCNode implements Runnable {
 
         try {
             PostgresFullPrunedBlockStore store = new PostgresFullPrunedBlockStore(netParams,
-                                                                                  235067,
-                                                                                  "localhost",
-                                                                                  "aie_bitcoin2",
-                                                                                  "aie_bitcoin",
-                                                                                  "aie_bitcoin");
+                    245562,
+                    "localhost",
+                    "aie_bitcoin2",
+                    "biafra",
+                    "");
             slf4jLogger.info("PostgresFullPrunedBlockStore constructed");
 
             long oneDayAgo = (System.currentTimeMillis() / 1000L) - (86400 * 10);
@@ -100,7 +100,7 @@ public class BTCNode implements Runnable {
             peerGroup.addEventListener(listener);
         }
         catch (BlockStoreException e) {slf4jLogger.error("Caught BlockStoreException: ", e);}
-        // catch (IOException e) {slf4jLogger.error("Caught IOException: ", e);}
+        // catch (IOException e) {Log.error("Caught IOException: ", e);}
     }
 }
 

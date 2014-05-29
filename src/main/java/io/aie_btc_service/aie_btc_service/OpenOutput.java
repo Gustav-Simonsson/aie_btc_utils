@@ -3,6 +3,8 @@ package io.aie_btc_service.aie_btc_service;
 import com.google.bitcoin.core.Sha256Hash;
 import com.google.bitcoin.core.Transaction;
 
+import java.util.Arrays;
+
 public class OpenOutput {
     public final byte[] hash;
     public final int index;
@@ -27,5 +29,15 @@ public class OpenOutput {
         this.scriptbytes = sb;
         //this.toaddress = toa;
         //this.addresstargetable = at;
+    }
+
+    @Override
+    public String toString() {
+        return "OpenOutput{" +
+                "hash=" + Arrays.toString(hash) +
+                ", index=" + index +
+                ", value=" + Arrays.toString(value) +
+                ", scriptbytes=" + Arrays.toString(scriptbytes) +
+                '}';
     }
 }
