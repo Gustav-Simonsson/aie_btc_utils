@@ -56,4 +56,14 @@ public class IncompleteT2AResponse {
     public void setT2Raw(String t2Raw) {
         this.t2Raw = t2Raw;
     }
+
+    @Override
+    public String toString() {
+        return "IncompleteT2AResponse{" +
+                "t2SigHash='" + t2SigHash + '\'' +
+                ", t2SigHashFlag='" + t2SigHashFlag + '\'' +
+                ", t2SigHashFlaganyonecanpay='" + t2SigHashFlaganyonecanpay + '\'' +
+                ", t2Raw='" + t2Raw + '\'' +
+                '}';
+    }
 }

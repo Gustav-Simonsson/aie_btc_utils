@@ -17,6 +17,7 @@ import com.google.bitcoin.script.ScriptBuilder;
 import com.google.bitcoin.store.BlockStoreException;
 import com.google.common.collect.ImmutableList;
 
+import io.aie_btc_service.aie_btc_service.model.T2PartiallySigned;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -186,7 +187,7 @@ public class BTCService {
         return;
     }
 
-    private static ECKey getECKeyFromWalletImportFormat(String s) {
+    public static ECKey getECKeyFromWalletImportFormat(String s) {
         ECKey key = new ECKey();
         try {
             key = (new DumpedPrivateKey(netParams, s)).getKey();
@@ -195,6 +196,37 @@ public class BTCService {
             Log.error("Caught AddressFormatException: ", e);
         }
         return key;
+    }
+
+    public T2PartiallySigned submitFirstT2Signature(String t2Signature, String t2Raw, String pubKey, boolean signForGiver) {
+
+        //TODO:
+        // 1. decode t2raw tx into byte[]
+        byte[] t2Bytes = DatatypeConverter.parseHexBinary(t2Raw);
+
+        // 2. create Transaction.java
+        Transaction t2 = new Transaction(netParams, t2Bytes);
+        Log.info("t2: " + t2);
+
+        // 3. convert signature to ECDSASignature and then TransactionSignature.java type
+        byte[] t2SignatureBytes = DatatypeConverter.parseHexBinary(t2Signature);
+        ECKey.ECDSASignature t2ECDSASignature = ECKey.ECDSASignature.decodeFromDER(t2SignatureBytes);
+        Log.info("t2ECDSASignature: " + t2ECDSASignature);
+
+        TransactionSignature t2TransactionSignature = new TransactionSignature(t2ECDSASignature, SigHash.ALL, true);
+        Log.info("t2TransactionSignature.encodeToBitcoin: " + DatatypeConverter.printHexBinary(t2TransactionSignature.encodeToBitcoin()));
+
+        // 4. Decode pubkey
+        byte[] pubkeyBytes = DatatypeConverter.parseHexBinary(pubKey);
+        ECKey ecPubKey = new ECKey(null, pubkeyBytes, false);
+        Log.info("ecPubKey: " + ecPubKey);
+
+        Log.info("signForGiver: " + signForGiver);
+        // (5. Apply signature to Transaction)
+        // 6. Sign input 0 or 1
+        t2.getInput(signForGiver ? 0 : 1).setScriptSig(ScriptBuilder.createInputScript(t2TransactionSignature, ecPubKey));
+
+        return new T2PartiallySigned(t2);
     }
 
     private static class CreateIncompleteT2A {

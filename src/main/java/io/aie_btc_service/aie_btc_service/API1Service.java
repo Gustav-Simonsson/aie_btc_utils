@@ -6,6 +6,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import io.aie_btc_service.aie_btc_service.model.IncompleteT2AResponse;
 
+import io.aie_btc_service.aie_btc_service.model.T2PartiallySigned;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
@@ -26,6 +27,7 @@ public class API1Service {
 
     public static void main(String[] args) throws Exception {
         init();
+
 
         get(new Route("/get-incomplete-t2-A") {
             @Override
@@ -49,6 +51,29 @@ public class API1Service {
                         new BigInteger("" + value));
 
                 return gson.toJson(new IncompleteT2AResponse(t2WithHash));
+            }
+
+        });
+
+        get(new Route("/submit-first-t2-signature") {
+            @Override
+            public Object handle(Request request, Response response) {
+
+
+                if (!checkQueryParameters(request, "t2-signature", "t2-raw", "pubkey", "sign-for")) {
+                    return "ERROR: Parameter(s) missing";
+                }
+
+                boolean signForGiver = "giver".equals(request.queryParams("sign-for"));
+
+                Log.info("Working on: submit-first-t2-signature");
+                T2PartiallySigned t2PartiallySigned = btcService.submitFirstT2Signature(
+                        request.queryParams("t2-signature"),
+                        request.queryParams("t2-raw"),
+                        request.queryParams("pubkey"),
+                        signForGiver);
+
+                return gson.toJson(t2PartiallySigned);
             }
 
         });
