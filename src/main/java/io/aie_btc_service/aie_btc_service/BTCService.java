@@ -78,9 +78,10 @@ public class BTCService {
         CreateIncompleteT2A createIncompleteT2A = new CreateIncompleteT2A(oracleKey, aliceKey, bobKey, txForGiver, value).invoke();
         Transaction t2 = createIncompleteT2A.getT2();
         Sha256Hash t2HashForSigning = createIncompleteT2A.getT2HashForSigning();
+        Sha256Hash t2HashForSigning2 = createIncompleteT2A.getT2HashForSigning2();
 
-//        OpenOutput aliceOO = createIncompleteT2A.getUnsignedOO();
-
+        Log.info(" t2HashForSigning: " + t2HashForSigning);
+        Log.info("t2HashForSigning2: " + t2HashForSigning2);
 
         // t2 has the multisig output and inputs from alice and bob
         t2.verify();
@@ -90,7 +91,7 @@ public class BTCService {
         Log.info("t2 output scriptPubKeyBytes: " + DatatypeConverter.printHexBinary(t2.getOutput(0).getScriptBytes()));
         Log.info("t2 serialized: " + DatatypeConverter.printHexBinary(t2.bitcoinSerialize()));
 
-        return new IncompleteT2WithHash(t2, t2HashForSigning);
+        return new IncompleteT2WithHash(t2, t2HashForSigning, t2HashForSigning2);
     }
 
     // Returns T2 without inputs and without signatures
@@ -206,7 +207,7 @@ public class BTCService {
 
         // 2. create Transaction.java
         Transaction t2 = new Transaction(netParams, t2Bytes);
-        Log.info("t2: " + t2);
+        Log.info("---> t2: " + t2);
 
         // 3. convert signature to ECDSASignature and then TransactionSignature.java type
         byte[] t2SignatureBytes = DatatypeConverter.parseHexBinary(t2Signature);
@@ -226,6 +227,12 @@ public class BTCService {
         // 6. Sign input 0 or 1
         t2.getInput(signForGiver ? 0 : 1).setScriptSig(ScriptBuilder.createInputScript(t2TransactionSignature, ecPubKey));
 
+        Log.info(" t2.getHashAsString(): " + t2.getHashAsString());
+        Log.info("t2.input.scriptSig(0): " + t2.getInput(0).getScriptSig());
+        Log.info("t2.input.scriptSig(1): " + t2.getInput(1).getScriptSig());
+        Log.info("         t2.serialize: " + DatatypeConverter.printHexBinary(t2.bitcoinSerialize()));
+
+
         return new T2PartiallySigned(t2);
     }
 
@@ -234,8 +241,10 @@ public class BTCService {
         private ECKey aliceKey;
         private ECKey bobKey;
         private Transaction t2;
-        private OpenOutput unsignedOO;
+        private OpenOutput unsignedAliceOO;
+        private OpenOutput unsignedBobOO;
         private Sha256Hash t2HashForAlice;
+        private Sha256Hash t2HashForBob;
         private BigInteger value;
         private boolean txForGiver;
 
@@ -256,8 +265,16 @@ public class BTCService {
             return t2HashForAlice;
         }
 
-        public OpenOutput getUnsignedOO() {
-            return unsignedOO;
+        public Sha256Hash getT2HashForSigning2() {
+
+            return t2HashForBob;
+        }
+        public OpenOutput getUnsignedAliceOO() {
+            return unsignedAliceOO;
+        }
+
+        public OpenOutput getUnsignedBobOO() {
+            return unsignedBobOO;
         }
 
         public CreateIncompleteT2A invoke() {
@@ -270,22 +287,30 @@ public class BTCService {
             // Add inputs to T2 and create hashes for alice and bob to sign
             Postgres pg = new Postgres("localhost", "aie_bitcoin2", "biafra", "");
 
-            if (txForGiver) {
-                unsignedOO = pg.getOpenOutput(aliceKey.toAddress(netParams).toString());
-            } else {
-                unsignedOO = pg.getOpenOutput(bobKey.toAddress(netParams).toString());
+            unsignedAliceOO = pg.getOpenOutput(aliceKey.toAddress(netParams).toString());
+            unsignedBobOO = pg.getOpenOutput(bobKey.toAddress(netParams).toString());
 
-            }
-            Log.info("             unsignedOO: " + unsignedOO);
-            Log.info("       unsignedOO.index: " + unsignedOO.index);
-            Log.info(" unsignedOO.hash.length: " + unsignedOO.hash.length);
-            TransactionOutPoint aliceT1OutPoint =
-                    new TransactionOutPoint(netParams, (long) unsignedOO.index, new Sha256Hash(unsignedOO.hash));
+            Log.info("                    aliceKey: " + aliceKey);
+            Log.info("             unsignedAliceOO: " + unsignedAliceOO);
+            Log.info("       unsignedAliceOO.index: " + unsignedAliceOO.index);
+            Log.info(" unsignedAliceOO.hash.length: " + unsignedAliceOO.hash.length);
+
+            Log.info("                      bobKey: " + bobKey);
+            Log.info("               unsignedBobOO: " + unsignedBobOO);
+            Log.info("         unsignedBobOO.index: " + unsignedBobOO.index);
+            Log.info("   unsignedBobOO.hash.length: " + unsignedBobOO.hash.length);
+
+            TransactionOutPoint aliceT1OutPoint = new TransactionOutPoint(netParams, (long) unsignedAliceOO.index, new Sha256Hash(unsignedAliceOO.hash));
+            TransactionOutPoint bobT1OutPoint = new TransactionOutPoint(netParams, (long) unsignedBobOO.index, new Sha256Hash(unsignedBobOO.hash));
+
             TransactionInput aliceT1Input = new TransactionInput(netParams, null, new byte[]{}, aliceT1OutPoint);
+            TransactionInput bobT1Input = new TransactionInput(netParams, null, new byte[]{}, bobT1OutPoint);
 
-            t2HashForAlice = addInputToT2(t2, aliceT1Input, unsignedOO.scriptbytes);
-            Log.debug("t2.getHashAsString(): " + t2.getHashAsString());
-            Log.debug("        t2.serialize: " + DatatypeConverter.printHexBinary(t2.bitcoinSerialize()));
+            t2HashForAlice = addInputToT2(t2, aliceT1Input, unsignedAliceOO.scriptbytes);
+            t2HashForBob = addInputToT2(t2, bobT1Input, unsignedBobOO.scriptbytes);
+
+            Log.info("t2HashForAlice: " + t2HashForAlice);
+            Log.info("  t2HashForBob: " + t2HashForBob);
 
             StoredTransactionOutput sout = new StoredTransactionOutput(t2.getHash(), t2.getOutput(0), 0, false);
             Log.info("sout value: " + DatatypeConverter.printHexBinary(sout.getValue().toByteArray()));

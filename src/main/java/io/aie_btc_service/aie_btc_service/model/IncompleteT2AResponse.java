@@ -1,36 +1,59 @@
 package io.aie_btc_service.aie_btc_service.model;
 
+import com.google.bitcoin.core.Sha256Hash;
 import io.aie_btc_service.aie_btc_service.IncompleteT2WithHash;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.xml.bind.DatatypeConverter;
 
 public class IncompleteT2AResponse {
 
-    public IncompleteT2AResponse(String t2SigHash, String t2SigHashFlag, String t2SigHashFlaganyonecanpay, String t2Raw) {
-        this.t2SigHash = t2SigHash;
+    private static final Logger Log = LoggerFactory.getLogger(IncompleteT2AResponse.class);
+
+    public IncompleteT2AResponse(Sha256Hash t2SigHashInput0, Sha256Hash t2SigHashInput1, String t2SigHashFlag, String t2SigHashFlaganyonecanpay, String t2Raw) {
+        if (t2SigHashInput0 != null) {
+            this.t2SigHashInput0 = DatatypeConverter.printHexBinary(t2SigHashInput0.getBytes());
+        } else {
+            this.t2SigHashInput0 = null;
+        }
+        if (t2SigHashInput1 != null) {
+            this.t2SigHashInput1 = DatatypeConverter.printHexBinary(t2SigHashInput1.getBytes());
+        } else {
+            this.t2SigHashInput1 = null;
+        }
+        Log.info("t2SigHashInput0: " + t2SigHashInput0);
+        Log.info("t2SigHashInput1: " + t2SigHashInput1);
+
         this.t2SigHashFlag = t2SigHashFlag;
         this.t2SigHashFlaganyonecanpay = t2SigHashFlaganyonecanpay;
         this.t2Raw = t2Raw;
     }
 
     public IncompleteT2AResponse(IncompleteT2WithHash incompleteT2WithHash) {
-        this(DatatypeConverter.printHexBinary(incompleteT2WithHash.getTxHash().getBytes()),
+        this(incompleteT2WithHash.getInput0Hash(), incompleteT2WithHash.getInput1Hash(),
                 "SIGHASH_ALL",
                 "true",
                 DatatypeConverter.printHexBinary(incompleteT2WithHash.getT2().bitcoinSerialize()));
     }
 
-    private String t2SigHash;
+    private String t2SigHashInput0;
+    private String t2SigHashInput1;
     private String t2SigHashFlag;
     private String t2SigHashFlaganyonecanpay;
     private String t2Raw;
 
-    public String getT2SigHash() {
-        return t2SigHash;
+    public String getT2SigHashInput0() {
+        return t2SigHashInput0;
     }
 
-    public void setT2SigHash(String t2SigHash) {
-        this.t2SigHash = t2SigHash;
+
+    public String getT2SigHashInput1() {
+        return t2SigHashInput1;
+    }
+
+    public void setT2SigHashInput0(String t2SigHashInput0) {
+        this.t2SigHashInput0 = t2SigHashInput0;
     }
 
     public String getT2SigHashFlag() {
@@ -60,7 +83,8 @@ public class IncompleteT2AResponse {
     @Override
     public String toString() {
         return "IncompleteT2AResponse{" +
-                "t2SigHash='" + t2SigHash + '\'' +
+                "t2SigHashInput0='" + t2SigHashInput0 + '\'' +
+                ", t2SigHashInput1='" + t2SigHashInput1 + '\'' +
                 ", t2SigHashFlag='" + t2SigHashFlag + '\'' +
                 ", t2SigHashFlaganyonecanpay='" + t2SigHashFlaganyonecanpay + '\'' +
                 ", t2Raw='" + t2Raw + '\'' +

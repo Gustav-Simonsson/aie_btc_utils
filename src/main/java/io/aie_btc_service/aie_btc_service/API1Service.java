@@ -1,5 +1,7 @@
 package io.aie_btc_service.aie_btc_service;
 
+import com.google.bitcoin.core.Transaction;
+import com.google.bitcoin.params.TestNet3Params;
 import com.google.bitcoin.utils.BriefLogFormatter;
 import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
@@ -13,6 +15,7 @@ import spark.Request;
 import spark.Response;
 import spark.Route;
 
+import javax.xml.bind.DatatypeConverter;
 import java.math.BigInteger;
 
 import static spark.Spark.get;
@@ -24,6 +27,7 @@ public class API1Service {
 
     private static Gson gson;
     private static BTCService btcService = new BTCService();
+    private static FullClient fullClient;
 
     public static void main(String[] args) throws Exception {
         init();
@@ -73,6 +77,15 @@ public class API1Service {
                         request.queryParams("pubkey"),
                         signForGiver);
 
+                String t2String = t2PartiallySigned.getT2RawPartiallySigned();
+
+                byte[] t2Bytes = DatatypeConverter.parseHexBinary(t2String);
+
+                Transaction t2 = new Transaction(new TestNet3Params(), t2Bytes);
+
+
+                fullClient.broadcast(t2);
+
                 return gson.toJson(t2PartiallySigned);
             }
 
@@ -85,7 +98,8 @@ public class API1Service {
                 .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_DASHES)
                 .setPrettyPrinting()
                 .create();
-        new FullClient().run();
+        fullClient = new FullClient();
+        fullClient.run();
     }
 
     private static boolean checkQueryParameters(Request request, String... parameterNames) {

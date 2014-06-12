@@ -4,7 +4,9 @@ package io.aie_btc_service.aie_btc_service.tools;
 import com.google.bitcoin.core.ECKey;
 import com.google.bitcoin.core.Sha256Hash;
 import com.google.bitcoin.core.Transaction;
+import com.google.bitcoin.core.TransactionInput;
 import com.google.bitcoin.crypto.TransactionSignature;
+import com.google.bitcoin.params.TestNet3Params;
 import com.google.bitcoin.utils.BriefLogFormatter;
 import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
@@ -16,7 +18,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.xml.bind.DatatypeConverter;
-import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -42,8 +43,8 @@ public class SignIncompleteT2 {
         String ownerOfInputToSign = "giver";
         long value = 100000;
 
-        //1. prepare request for getting unsigend T2A
-        String query = String.format("giver-pubkey=%s&taker-pubkey=%s&event-pubkey=%s&value=%s&owner-of-input-to-sign=%s",
+        //1. prepare request for getting unsigned T2A
+        String url = "http://127.0.0.1:4567/get-incomplete-t2-A?" + String.format("giver-pubkey=%s&taker-pubkey=%s&event-pubkey=%s&value=%s&owner-of-input-to-sign=%s",
                 URLEncoder.encode(giverPubkey),
                 URLEncoder.encode(takerPubKey),
                 URLEncoder.encode(oraclePubKey),
@@ -51,7 +52,6 @@ public class SignIncompleteT2 {
                 URLEncoder.encode(ownerOfInputToSign)
 
         );
-        String url = "http://127.0.0.1:4567/get-incomplete-t2-A?" + query;
         HttpURLConnection client = (HttpURLConnection) new URL(url).openConnection();
 
         Log.info("Url.get-incomplete-t2-A: " + url);
@@ -64,21 +64,27 @@ public class SignIncompleteT2 {
         Log.info("Result.IncompleteT2AResponse: " + gson.toJson(result));
 
         //4. Sign the stuff
-        Sha256Hash hash = new Sha256Hash(result.getT2SigHash());
-        ECKey.ECDSASignature signature = aliceKey.sign(hash);
+        Sha256Hash input0Hash = new Sha256Hash(result.getT2SigHashInput0());
+        Sha256Hash input1Hash = new Sha256Hash(result.getT2SigHashInput1());
+
+        ECKey.ECDSASignature aliceSignature = aliceKey.sign(input0Hash);
+        ECKey.ECDSASignature bobSignature = bobKey.sign(input1Hash);
 
         Transaction.SigHash sigHash = Transaction.SigHash.ALL;
-        TransactionSignature foo = new TransactionSignature(signature, sigHash, true);
+        TransactionSignature aliceTransactionSignature = new TransactionSignature(aliceSignature, sigHash, true);
+        TransactionSignature bobTransactionSignature = new TransactionSignature(bobSignature, sigHash, true);
+
+        //
+        // Have the server sign it for the first time
+        //
 
         //5. send signed result to API to /submit-first-t2-signature
-        query = String.format("t2-signature=%s&t2-raw=%s&pubkey=%s&sign-for=%s",
-                URLEncoder.encode(DatatypeConverter.printHexBinary(foo.encodeToBitcoin())),
+        url = "http://127.0.0.1:4567/submit-first-t2-signature?" + String.format("t2-signature=%s&t2-raw=%s&pubkey=%s&sign-for=%s",
+                URLEncoder.encode(DatatypeConverter.printHexBinary(aliceTransactionSignature.encodeToBitcoin())),
                 URLEncoder.encode(result.getT2Raw()),
                 URLEncoder.encode(DatatypeConverter.printHexBinary(giverPubkey.getBytes())),
                 "giver"
         );
-
-        url = "http://127.0.0.1:4567/submit-first-t2-signature?" + query;
         client = (HttpURLConnection) new URL(url).openConnection();
 
         Log.info("Url.submit-first-t2-signature: " + url);
@@ -88,6 +94,27 @@ public class SignIncompleteT2 {
 
         T2PartiallySigned t2PartiallySigned = gson.fromJson(new InputStreamReader(client.getInputStream()), T2PartiallySigned.class);
         Log.info("Result.T2PartiallySigned: " + gson.toJson(t2PartiallySigned));
+
+        //
+        // Sign second time
+        //
+
+        url = "http://127.0.0.1:4567/submit-first-t2-signature?" + String.format("t2-signature=%s&t2-raw=%s&pubkey=%s&sign-for=%s",
+                URLEncoder.encode(DatatypeConverter.printHexBinary(bobTransactionSignature.encodeToBitcoin())),
+                URLEncoder.encode(t2PartiallySigned.getT2RawPartiallySigned()),
+                URLEncoder.encode(DatatypeConverter.printHexBinary(takerPubKey.getBytes())),
+                "taker"
+        );
+
+        client = (HttpURLConnection) new URL(url).openConnection();
+
+        Log.info("Url.submit-first-t2-signature: " + url);
+
+        //2. issue request
+        client.connect();
+
+        t2PartiallySigned = gson.fromJson(new InputStreamReader(client.getInputStream()), T2PartiallySigned.class);
+        Log.info("Result.T2Signed: " + gson.toJson(t2PartiallySigned));
 
     }
 

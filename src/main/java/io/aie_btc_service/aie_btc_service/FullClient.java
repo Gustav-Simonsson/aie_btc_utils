@@ -130,4 +130,12 @@ public class FullClient {
     public static PeerGroup getPeerGroup() {
         return peerGroup;
     }
+
+    public void broadcast(Transaction t2) {
+
+        t2.verify();
+
+        peerGroup.broadcastTransaction(t2, 2);
+
+    }
 }
