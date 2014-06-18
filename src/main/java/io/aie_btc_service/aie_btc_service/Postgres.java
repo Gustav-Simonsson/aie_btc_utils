@@ -1,32 +1,20 @@
 package io.aie_btc_service.aie_btc_service;
 
 import com.google.bitcoin.core.*;
-import com.google.bitcoin.script.Script;
-import com.google.bitcoin.core.Sha256Hash;
 import com.google.bitcoin.core.StoredTransactionOutput;
-import com.google.bitcoin.core.Transaction;
-import com.google.bitcoin.core.TransactionOutPoint;
-import com.google.bitcoin.core.TransactionOutput;
-import com.google.bitcoin.params.MainNetParams;
-import com.google.bitcoin.params.TestNet2Params;
 import com.google.bitcoin.params.TestNet3Params;
-import com.google.common.collect.Lists;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.math.BigInteger;
-import java.security.PublicKey;
 import java.sql.*;
 import java.util.*;
 
+import static io.aie_btc_service.aie_btc_service.FullClient.TEST_NET_3_PARAMS;
+
 
 public class Postgres {
-    public static final TestNet3Params netParams = new TestNet3Params();
-    private static final Logger log = LoggerFactory.getLogger(Postgres.class);
+    private static final Logger Log = LoggerFactory.getLogger(Postgres.class);
     private ThreadLocal<Connection> conn;
     private List<Connection> allConnections;
     private String connectionURL;
@@ -45,9 +33,9 @@ public class Postgres {
 
         try {
             Class.forName(driver);
-            log.info(driver + " loaded. ");
+            Log.info(driver + " loaded. ");
         } catch (java.lang.ClassNotFoundException e) {
-            log.error("check CLASSPATH for Postgres jar ", e);
+            Log.error("check CLASSPATH for Postgres jar ", e);
         }
 
         maybeConnect();
@@ -56,9 +44,11 @@ public class Postgres {
     // TODO: fix proper exception handling
     // TODO: make it work for multiple outputs
     public OpenOutput getOpenOutput(String a) {
+        Log.info("getOpenOutput(): address: " + a);
+
         Address address = null;
         try {
-            address = new Address(netParams, a);
+            address = new Address(TEST_NET_3_PARAMS, a);
         }
         catch (AddressFormatException e) {}
 
@@ -70,7 +60,7 @@ public class Postgres {
                                             "FROM openOutputs WHERE toaddress = ?");
             s.setString(1, address.toString());
             ResultSet res = s.executeQuery();
-            log.info("SQL res: " + res.toString());
+            Log.info("SQL res: " + res.toString());
             if (res.next()) {
                 byte[] hash = res.getBytes(1);
                 int index = res.getInt(2);
@@ -79,18 +69,18 @@ public class Postgres {
                 oo = new OpenOutput(hash, index, value, scriptBytes);
                 return oo;
             } else {
-                log.error("SQL query failed :O :O ");
+                Log.error("SQL query failed :O :O ");
                 return oo;
             }
         } catch (SQLException ex) {
-                log.error("SQLException :O " + ex);
+                Log.error("SQLException :O " + ex);
                 return oo;
         } finally {
             if (s != null)
                 try {
                     s.close();
                 } catch (SQLException ex2) {
-                    log.error("SQLException :O " + ex2);
+                    Log.error("SQLException :O " + ex2);
                 }
         }
     }
@@ -109,14 +99,14 @@ public class Postgres {
             s.executeUpdate();
             s.close();
         } catch (SQLException e) {
-            log.error("SQLException :O " + e);
+            Log.error("SQLException :O " + e);
             return;
         } finally {
             if (s != null)
                 try {
                     s.close();
                 } catch (SQLException e) {
-                    log.error("SQLException :O " + e);
+                    Log.error("SQLException :O " + e);
                     return;
                 }
         }
@@ -134,9 +124,9 @@ public class Postgres {
             conn.set(DriverManager.getConnection(connectionURL, props));
 
             allConnections.add(conn.get());
-            log.info("Made a new connection to database " + connectionURL);
+            Log.info("Made a new connection to database " + connectionURL);
         } catch (SQLException ex) {
-            log.error("SQLException: " + ex);
+            Log.error("SQLException: " + ex);
         }
     }
 

@@ -20,7 +20,12 @@ import java.util.concurrent.TimeUnit;
 public class FullClient {
 
     public static final Logger Log = LoggerFactory.getLogger(FullClient.class);
-    private final static NetworkParameters netParams = new TestNet3Params();
+    public final static NetworkParameters TEST_NET_3_PARAMS = new TestNet3Params();
+    public static final String DB_HOST = "localhost";
+    public static final String DB_NAME = "aie_bitcoin3";
+//    public static final String DB_NAME = "aie_bitcoin2";
+    public static final String DB_USER = "biafra";
+    public static final String DB_PASSWORD = "";
     private static PostgresFullPrunedBlockStore blockStore;
 
     public static void main(String[] args) {
@@ -58,14 +63,14 @@ public class FullClient {
 
         try {
 
-            blockStore = new PostgresFullPrunedBlockStore(netParams, 0, "localhost", "aie_bitcoin2", "biafra", "");
-            FullPrunedBlockChain blockChain = new FullPrunedBlockChain(netParams, blockStore);
-            PeerDiscovery peerDiscovery = new DnsDiscovery(netParams);
+            blockStore = new PostgresFullPrunedBlockStore(TEST_NET_3_PARAMS, 10000, DB_HOST, DB_NAME, DB_USER, DB_PASSWORD);
+            FullPrunedBlockChain blockChain = new FullPrunedBlockChain(TEST_NET_3_PARAMS, blockStore);
+            PeerDiscovery peerDiscovery = new DnsDiscovery(TEST_NET_3_PARAMS);
 
             //faster
             blockChain.setRunScripts(false);
 
-            peerGroup = new PeerGroup(netParams, blockChain);
+            peerGroup = new PeerGroup(TEST_NET_3_PARAMS, blockChain);
             peerGroup.addPeerDiscovery(peerDiscovery);
             InetAddress ia = null;
             InetAddress ia2 = null;
@@ -85,7 +90,9 @@ public class FullClient {
             PeerEventListener listener = new TxListener2();
             peerGroup.addEventListener(listener);
 
-            peerGroup.start();
+            Log.info("calling startAndWait...");
+
+            peerGroup.startAndWait();
             Log.info("Starting up. Soon ready for Queries.");
 
         } catch (BlockStoreException e) {
@@ -100,7 +107,7 @@ public class FullClient {
         long start = System.currentTimeMillis();
         BigInteger balance;
 
-        balance = blockStore.calculateBalanceForAddress(new Address(netParams, address));
+        balance = blockStore.calculateBalanceForAddress(new Address(TEST_NET_3_PARAMS, address));
         Log.info("Balance for address: " + address + " is " + balance + ". Calulated in " + (System.currentTimeMillis() - start) + "ms");
 
         return balance;
@@ -111,7 +118,7 @@ public class FullClient {
             @Override
             public InetSocketAddress[] getPeers(long timeoutValue, TimeUnit timeoutUnit) throws PeerDiscoveryException {
                 InetSocketAddress[] result = new InetSocketAddress[1];
-                result[0] = new InetSocketAddress("localhost", 8333);
+                result[0] = new InetSocketAddress(DB_HOST, 8333);
                 return result;
             }
 

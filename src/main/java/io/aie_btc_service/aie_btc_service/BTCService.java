@@ -11,7 +11,6 @@ import com.google.bitcoin.core.Transaction.SigHash;
 import com.google.bitcoin.core.TransactionInput;
 import com.google.bitcoin.core.TransactionOutPoint;
 import com.google.bitcoin.crypto.TransactionSignature;
-import com.google.bitcoin.params.TestNet3Params;
 import com.google.bitcoin.script.Script;
 import com.google.bitcoin.script.ScriptBuilder;
 import com.google.bitcoin.store.BlockStoreException;
@@ -27,9 +26,10 @@ import java.util.List;
 
 import javax.xml.bind.DatatypeConverter;
 
+import static io.aie_btc_service.aie_btc_service.FullClient.TEST_NET_3_PARAMS;
+
 public class BTCService {
     private static final Logger Log = LoggerFactory.getLogger(BTCService.class);
-    public static final TestNet3Params netParams = new TestNet3Params();
     public static final SigHash sigHashAll = Transaction.SigHash.ALL;
 
     public IncompleteT2WithHash createIncompleteT2WithHash(String giverKey, String takerKey,
@@ -46,18 +46,19 @@ public class BTCService {
 
 
         try {
-
-            Log.debug("oracleKey.address: " + oracleKey.toAddress(netParams));
-            Log.debug("oracleKey.pubkey: " + DatatypeConverter.printHexBinary(oracleKey.getPubKey()));
-            Log.debug("oracleKey.balance: " + FullClient.getBalanceForAddress(oracleKey.toAddress(netParams).toString()));
-
-            Log.debug("aliceKey.address: " + aliceKey.toAddress(netParams));
-            Log.debug("aliceKey.pubkey: " + DatatypeConverter.printHexBinary((aliceKey.getPubKey())));
-            Log.debug("aliceKey.balance: " + FullClient.getBalanceForAddress(aliceKey.toAddress(netParams).toString()));
-
-            Log.debug("bobKey.address: " + bobKey.toAddress(netParams));
-            Log.debug("bobKey.pubkey: " + DatatypeConverter.printHexBinary(bobKey.getPubKey()));
-            Log.debug("bobKey.balance: " + FullClient.getBalanceForAddress(bobKey.toAddress(netParams).toString()));
+            Log.info("-------------------------------------------------------");
+            Log.info("oracleKey.address: " + oracleKey.toAddress(TEST_NET_3_PARAMS));
+            Log.info("oracleKey.pubkey: " + DatatypeConverter.printHexBinary(oracleKey.getPubKey()));
+            Log.info("oracleKey.balance: " + FullClient.getBalanceForAddress(oracleKey.toAddress(TEST_NET_3_PARAMS).toString()));
+            Log.info("-------------------------");
+            Log.info("aliceKey.address: " + aliceKey.toAddress(TEST_NET_3_PARAMS));
+            Log.info("aliceKey.pubkey: " + DatatypeConverter.printHexBinary((aliceKey.getPubKey())));
+            Log.info("aliceKey.balance: " + FullClient.getBalanceForAddress(aliceKey.toAddress(TEST_NET_3_PARAMS).toString()));
+            Log.info("-------------------------");
+            Log.info("bobKey.address: " + bobKey.toAddress(TEST_NET_3_PARAMS));
+            Log.info("bobKey.pubkey: " + DatatypeConverter.printHexBinary(bobKey.getPubKey()));
+            Log.info("bobKey.balance: " + FullClient.getBalanceForAddress(bobKey.toAddress(TEST_NET_3_PARAMS).toString()));
+            Log.info("-------------------------------------------------------");
 
 
         } catch (BlockStoreException e) {
@@ -68,11 +69,11 @@ public class BTCService {
 
 
         Log.info("myPubKey: " + DatatypeConverter.printHexBinary(oracleKey.getPubKey()));
-        Log.info("myAddress: " + oracleKey.toAddress(netParams));
+        Log.info("myAddress: " + oracleKey.toAddress(TEST_NET_3_PARAMS));
         Log.info("alicePubKey: " + DatatypeConverter.printHexBinary(aliceKey.getPubKey()));
-        Log.info("aliceAddress: " + aliceKey.toAddress(netParams));
+        Log.info("aliceAddress: " + aliceKey.toAddress(TEST_NET_3_PARAMS));
         Log.info("bobPubKey: " + DatatypeConverter.printHexBinary(bobKey.getPubKey()));
-        Log.info("bobAddress: " + bobKey.toAddress(netParams));
+        Log.info("bobAddress: " + bobKey.toAddress(TEST_NET_3_PARAMS));
 
         /* create T2 */
         CreateIncompleteT2A createIncompleteT2A = new CreateIncompleteT2A(oracleKey, aliceKey, bobKey, txForGiver, value).invoke();
@@ -123,7 +124,7 @@ public class BTCService {
         List<ECKey> keys = ImmutableList.of(giverKey, takerKey, eventKey);
         // 2 out of 3 multisig script
         Script script = ScriptBuilder.createMultiSigOutputScript(2, keys);
-        Transaction contractTx = new Transaction(netParams);
+        Transaction contractTx = new Transaction(TEST_NET_3_PARAMS);
         // TODO: Add default miner fee?
         contractTx.addOutput(SatoshiAmount, script);
         return contractTx;
@@ -157,13 +158,13 @@ public class BTCService {
                                         Address toAddress,
                                         long spendAmount,
                                         ECKey signKey) {
-        Postgres pg = new Postgres("localhost","aie_bitcoin2", "aie_bitcoin", "aie_bitcoin");
+        Postgres pg = new Postgres(FullClient.DB_HOST, FullClient.DB_NAME, FullClient.DB_USER, FullClient.DB_PASSWORD);
         OpenOutput oo = pg.getOpenOutput(fromAddress.toString());
 
-        TransactionOutPoint txOutPoint = new TransactionOutPoint(netParams, (long) oo.index, new Sha256Hash(oo.hash));
-        TransactionInput spendInput = new TransactionInput(netParams, null, new byte[]{}, txOutPoint);
+        TransactionOutPoint txOutPoint = new TransactionOutPoint(TEST_NET_3_PARAMS, (long) oo.index, new Sha256Hash(oo.hash));
+        TransactionInput spendInput = new TransactionInput(TEST_NET_3_PARAMS, null, new byte[]{}, txOutPoint);
 
-        Transaction spendTx = new Transaction(netParams);
+        Transaction spendTx = new Transaction(TEST_NET_3_PARAMS);
         spendTx.addInput(spendInput);
 
         long amountAvailable = (long) (ByteBuffer.wrap(oo.value).getInt());
@@ -191,7 +192,7 @@ public class BTCService {
     public static ECKey getECKeyFromWalletImportFormat(String s) {
         ECKey key = new ECKey();
         try {
-            key = (new DumpedPrivateKey(netParams, s)).getKey();
+            key = (new DumpedPrivateKey(TEST_NET_3_PARAMS, s)).getKey();
         }
         catch (AddressFormatException e) {
             Log.error("Caught AddressFormatException: ", e);
@@ -206,7 +207,7 @@ public class BTCService {
         byte[] t2Bytes = DatatypeConverter.parseHexBinary(t2Raw);
 
         // 2. create Transaction.java
-        Transaction t2 = new Transaction(netParams, t2Bytes);
+        Transaction t2 = new Transaction(TEST_NET_3_PARAMS, t2Bytes);
         Log.info("---> t2: " + t2);
 
         // 3. convert signature to ECDSASignature and then TransactionSignature.java type
@@ -285,10 +286,10 @@ public class BTCService {
                     value);
 
             // Add inputs to T2 and create hashes for alice and bob to sign
-            Postgres pg = new Postgres("localhost", "aie_bitcoin2", "biafra", "");
+            Postgres pg = new Postgres(FullClient.DB_HOST, FullClient.DB_NAME, FullClient.DB_USER, FullClient.DB_PASSWORD);
 
-            unsignedAliceOO = pg.getOpenOutput(aliceKey.toAddress(netParams).toString());
-            unsignedBobOO = pg.getOpenOutput(bobKey.toAddress(netParams).toString());
+            unsignedAliceOO = pg.getOpenOutput(aliceKey.toAddress(TEST_NET_3_PARAMS).toString());
+            unsignedBobOO = pg.getOpenOutput(bobKey.toAddress(TEST_NET_3_PARAMS).toString());
 
             Log.info("                    aliceKey: " + aliceKey);
             Log.info("             unsignedAliceOO: " + unsignedAliceOO);
@@ -300,11 +301,11 @@ public class BTCService {
             Log.info("         unsignedBobOO.index: " + unsignedBobOO.index);
             Log.info("   unsignedBobOO.hash.length: " + unsignedBobOO.hash.length);
 
-            TransactionOutPoint aliceT1OutPoint = new TransactionOutPoint(netParams, (long) unsignedAliceOO.index, new Sha256Hash(unsignedAliceOO.hash));
-            TransactionOutPoint bobT1OutPoint = new TransactionOutPoint(netParams, (long) unsignedBobOO.index, new Sha256Hash(unsignedBobOO.hash));
+            TransactionOutPoint aliceT1OutPoint = new TransactionOutPoint(TEST_NET_3_PARAMS, (long) unsignedAliceOO.index, new Sha256Hash(unsignedAliceOO.hash));
+            TransactionOutPoint bobT1OutPoint = new TransactionOutPoint(TEST_NET_3_PARAMS, (long) unsignedBobOO.index, new Sha256Hash(unsignedBobOO.hash));
 
-            TransactionInput aliceT1Input = new TransactionInput(netParams, null, new byte[]{}, aliceT1OutPoint);
-            TransactionInput bobT1Input = new TransactionInput(netParams, null, new byte[]{}, bobT1OutPoint);
+            TransactionInput aliceT1Input = new TransactionInput(TEST_NET_3_PARAMS, null, new byte[]{}, aliceT1OutPoint);
+            TransactionInput bobT1Input = new TransactionInput(TEST_NET_3_PARAMS, null, new byte[]{}, bobT1OutPoint);
 
             t2HashForAlice = addInputToT2(t2, aliceT1Input, unsignedAliceOO.scriptbytes);
             t2HashForBob = addInputToT2(t2, bobT1Input, unsignedBobOO.scriptbytes);

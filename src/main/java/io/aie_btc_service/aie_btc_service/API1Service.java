@@ -32,6 +32,25 @@ public class API1Service {
     public static void main(String[] args) throws Exception {
         init();
 
+        get(new Route("/address-balance/:address") {
+            @Override
+            public Object handle(Request request, Response response) {
+                BigInteger balance = new BigInteger("0");
+                try {
+
+                    Log.info("response: " + request.params("address"));
+                    Log.info("response: " + response);
+
+                    balance = fullClient.getBalanceForAddress(request.params("address"));
+
+                } catch (Exception e) {
+                    Log.error("Exception during processing: ", e);
+                }
+
+                return "" + balance;
+            }
+        });
+
 
         get(new Route("/get-incomplete-t2-A") {
             @Override

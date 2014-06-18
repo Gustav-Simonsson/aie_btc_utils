@@ -61,12 +61,8 @@ public class BTCNode implements Runnable {
         slf4jLogger.info("starting AIE bitcoinj node...");
 
         try {
-            PostgresFullPrunedBlockStore store = new PostgresFullPrunedBlockStore(netParams,
-                    245562,
-                    "localhost",
-                    "aie_bitcoin2",
-                    "biafra",
-                    "");
+            PostgresFullPrunedBlockStore store = new PostgresFullPrunedBlockStore(netParams, 10000,
+                    FullClient.DB_HOST, FullClient.DB_NAME, FullClient.DB_USER, FullClient.DB_PASSWORD);
             slf4jLogger.info("PostgresFullPrunedBlockStore constructed");
 
             long oneDayAgo = (System.currentTimeMillis() / 1000L) - (86400 * 10);
@@ -82,18 +78,21 @@ public class BTCNode implements Runnable {
             InetAddress ia3 = null;
             InetAddress ia4 = null;
             try {
-                ia  = InetAddress.getByName("54.243.211.176");
+                ia = InetAddress.getByName("54.243.211.176");
                 ia2 = InetAddress.getByName("148.251.6.214");
                 ia3 = InetAddress.getByName("188.226.139.138");
                 ia4 = InetAddress.getByName("144.76.165.115");
-            } catch (UnknownHostException e){ slf4jLogger.error("omg :O " + e);};
+            } catch (UnknownHostException e) {
+                slf4jLogger.error("omg :O " + e);
+            }
+            ;
             peerGroup.addAddress(new PeerAddress(ia, 18333));
             peerGroup.addAddress(new PeerAddress(ia2, 18333));
             peerGroup.addAddress(new PeerAddress(ia3, 18333));
             peerGroup.addAddress(new PeerAddress(ia4, 18333));
 
             // new String[]{"testnet-seed.bluematt.me"},
-            // peerGroup.addPeerDiscovery(new DnsDiscovery(netParams));
+            // peerGroup.addPeerDiscovery(new DnsDiscovery(TEST_NET_3_PARAMS));
             slf4jLogger.info("Starting peerGroup ...");
             peerGroup.startAndWait();
             PeerEventListener listener = new TxListener2();
@@ -105,7 +104,6 @@ public class BTCNode implements Runnable {
 }
 
 class TxListener2 implements PeerEventListener {
-    public static final TestNet3Params netParams = new TestNet3Params();
     public final Logger slf4jLogger = LoggerFactory.getLogger(BTCNode.class);
 
     public List<Message> getData (Peer p, GetDataMessage m) {

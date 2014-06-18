@@ -4,9 +4,7 @@ package io.aie_btc_service.aie_btc_service.tools;
 import com.google.bitcoin.core.ECKey;
 import com.google.bitcoin.core.Sha256Hash;
 import com.google.bitcoin.core.Transaction;
-import com.google.bitcoin.core.TransactionInput;
 import com.google.bitcoin.crypto.TransactionSignature;
-import com.google.bitcoin.params.TestNet3Params;
 import com.google.bitcoin.utils.BriefLogFormatter;
 import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
@@ -33,14 +31,20 @@ public class SignIncompleteT2 {
         init();
         //Secretkey:
         // add harcoded testnet priv keys here for testing
-        ECKey oracleKey = BTCService.getECKeyFromWalletImportFormat("92r2FtYSQcqQMgzoXs3AzDAtu7Q3hgXmRD2HpcDM7g7UgArcxq6");
-        ECKey aliceKey = BTCService.getECKeyFromWalletImportFormat("92pJFTW3srGK11RDeWkXqVv3H1MvWd2xeqkB8W2eWFaftsoRGNk");
-        ECKey bobKey = BTCService.getECKeyFromWalletImportFormat("92SL8DDiEpTiaqWHtHufG8vW2wpZkwSrL3796oUDV6yaWLM3qnB");
+//        ECKey oracleKey = BTCService.getECKeyFromWalletImportFormat("92r2FtYSQcqQMgzoXs3AzDAtu7Q3hgXmRD2HpcDM7g7UgArcxq6");
+//        ECKey aliceKey = BTCService.getECKeyFromWalletImportFormat("92pJFTW3srGK11RDeWkXqVv3H1MvWd2xeqkB8W2eWFaftsoRGNk");
+//        ECKey bobKey = BTCService.getECKeyFromWalletImportFormat("92SL8DDiEpTiaqWHtHufG8vW2wpZkwSrL3796oUDV6yaWLM3qnB");
+
+        ECKey oracleKey = BTCService.getECKeyFromWalletImportFormat("cUssvG7iDD4ZZeMzgVDMpqwgbXfiv9XZipKYxF73Qn9JqtideQw2");
+        ECKey aliceKey = BTCService.getECKeyFromWalletImportFormat("cQPEgupjVLWtsx3YU3ukqnZ2de9gmJLj67SYKqdTxwGcUZn6a31W");
+        ECKey bobKey = BTCService.getECKeyFromWalletImportFormat("cTTdqnanz2MuF2xbNuVkutVZERs9QryjJVtFhNPZkwe6fmUz4VCS");
+
 
         String giverPubkey = DatatypeConverter.printHexBinary(aliceKey.getPubKey());
         String takerPubKey = DatatypeConverter.printHexBinary(bobKey.getPubKey());
         String oraclePubKey = DatatypeConverter.printHexBinary(oracleKey.getPubKey());
         String ownerOfInputToSign = "giver";
+
         long value = 100000;
 
         //1. prepare request for getting unsigned T2A
