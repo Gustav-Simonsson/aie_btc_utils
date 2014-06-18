@@ -3,11 +3,10 @@ package io.aie_btc_service.aie_btc_service.tools;
 
 import com.google.bitcoin.core.ECKey;
 import com.google.bitcoin.utils.BriefLogFormatter;
-import io.aie_btc_service.aie_btc_service.BTCService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static io.aie_btc_service.aie_btc_service.FullClient.TEST_NET_3_PARAMS;
+import static io.aie_btc_service.aie_btc_service.FullClient.NETWORK_PARAMETERS;
 
 public class CreateThreeWallets {
 
@@ -17,16 +16,16 @@ public class CreateThreeWallets {
         BriefLogFormatter.init();
 
         ECKey oracleKey = new ECKey();
-        Log.info("Oracle private Key: " + oracleKey.getPrivateKeyEncoded(TEST_NET_3_PARAMS));
-        Log.info("Oracle     address: " + oracleKey.toAddress(TEST_NET_3_PARAMS));
+        Log.info("Oracle private Key: " + oracleKey.getPrivateKeyEncoded(NETWORK_PARAMETERS));
+        Log.info("Oracle     address: " + oracleKey.toAddress(NETWORK_PARAMETERS));
 
         ECKey aliceKey = new ECKey();
-        Log.info("Alice (giver)  private Key: " + aliceKey.getPrivateKeyEncoded(TEST_NET_3_PARAMS));
-        Log.info("Alice              address: " + aliceKey.toAddress(TEST_NET_3_PARAMS));
+        Log.info("Alice (giver)  private Key: " + aliceKey.getPrivateKeyEncoded(NETWORK_PARAMETERS));
+        Log.info("Alice              address: " + aliceKey.toAddress(NETWORK_PARAMETERS));
 
         ECKey bobKey = new ECKey();
-        Log.info("Bob (taker)  private Key: " + bobKey.getPrivateKeyEncoded(TEST_NET_3_PARAMS));
-        Log.info("Bob              address: " + bobKey.toAddress(TEST_NET_3_PARAMS));
+        Log.info("Bob (taker)  private Key: " + bobKey.getPrivateKeyEncoded(NETWORK_PARAMETERS));
+        Log.info("Bob              address: " + bobKey.toAddress(NETWORK_PARAMETERS));
 /*
 08:48:56 29 CreateThreeWallets.main: Oracle private Key: cUssvG7iDD4ZZeMzgVDMpqwgbXfiv9XZipKYxF73Qn9JqtideQw2
 08:48:56 29 CreateThreeWallets.main: Oracle     address: mjwtbiPTV23b61VPPw3dxAM689iimbmnH9

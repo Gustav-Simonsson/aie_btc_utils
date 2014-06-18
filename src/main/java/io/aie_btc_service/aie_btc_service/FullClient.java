@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
 public class FullClient {
 
     public static final Logger Log = LoggerFactory.getLogger(FullClient.class);
-    public final static NetworkParameters TEST_NET_3_PARAMS = new TestNet3Params();
+    public final static NetworkParameters NETWORK_PARAMETERS = new TestNet3Params();
     public static final String DB_HOST = "localhost";
     public static final String DB_NAME = "aie_bitcoin3";
 //    public static final String DB_NAME = "aie_bitcoin2";
@@ -63,14 +63,14 @@ public class FullClient {
 
         try {
 
-            blockStore = new PostgresFullPrunedBlockStore(TEST_NET_3_PARAMS, 10000, DB_HOST, DB_NAME, DB_USER, DB_PASSWORD);
-            FullPrunedBlockChain blockChain = new FullPrunedBlockChain(TEST_NET_3_PARAMS, blockStore);
-            PeerDiscovery peerDiscovery = new DnsDiscovery(TEST_NET_3_PARAMS);
+            blockStore = new PostgresFullPrunedBlockStore(NETWORK_PARAMETERS, 10000, DB_HOST, DB_NAME, DB_USER, DB_PASSWORD);
+            FullPrunedBlockChain blockChain = new FullPrunedBlockChain(NETWORK_PARAMETERS, blockStore);
+            PeerDiscovery peerDiscovery = new DnsDiscovery(NETWORK_PARAMETERS);
 
             //faster
             blockChain.setRunScripts(false);
 
-            peerGroup = new PeerGroup(TEST_NET_3_PARAMS, blockChain);
+            peerGroup = new PeerGroup(NETWORK_PARAMETERS, blockChain);
             peerGroup.addPeerDiscovery(peerDiscovery);
             InetAddress ia = null;
             InetAddress ia2 = null;
@@ -107,7 +107,7 @@ public class FullClient {
         long start = System.currentTimeMillis();
         BigInteger balance;
 
-        balance = blockStore.calculateBalanceForAddress(new Address(TEST_NET_3_PARAMS, address));
+        balance = blockStore.calculateBalanceForAddress(new Address(NETWORK_PARAMETERS, address));
         Log.info("Balance for address: " + address + " is " + balance + ". Calulated in " + (System.currentTimeMillis() - start) + "ms");
 
         return balance;

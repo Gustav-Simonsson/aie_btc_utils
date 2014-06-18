@@ -92,7 +92,7 @@ public class BTCNode implements Runnable {
             peerGroup.addAddress(new PeerAddress(ia4, 18333));
 
             // new String[]{"testnet-seed.bluematt.me"},
-            // peerGroup.addPeerDiscovery(new DnsDiscovery(TEST_NET_3_PARAMS));
+            // peerGroup.addPeerDiscovery(new DnsDiscovery(NETWORK_PARAMETERS));
             slf4jLogger.info("Starting peerGroup ...");
             peerGroup.startAndWait();
             PeerEventListener listener = new TxListener2();

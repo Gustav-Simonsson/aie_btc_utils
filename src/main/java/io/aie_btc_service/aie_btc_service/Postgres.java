@@ -2,7 +2,6 @@ package io.aie_btc_service.aie_btc_service;
 
 import com.google.bitcoin.core.*;
 import com.google.bitcoin.core.StoredTransactionOutput;
-import com.google.bitcoin.params.TestNet3Params;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,7 +9,7 @@ import org.slf4j.LoggerFactory;
 import java.sql.*;
 import java.util.*;
 
-import static io.aie_btc_service.aie_btc_service.FullClient.TEST_NET_3_PARAMS;
+import static io.aie_btc_service.aie_btc_service.FullClient.NETWORK_PARAMETERS;
 
 
 public class Postgres {
@@ -48,7 +47,7 @@ public class Postgres {
 
         Address address = null;
         try {
-            address = new Address(TEST_NET_3_PARAMS, a);
+            address = new Address(NETWORK_PARAMETERS, a);
         }
         catch (AddressFormatException e) {}
 
