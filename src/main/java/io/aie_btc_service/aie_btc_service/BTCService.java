@@ -202,6 +202,10 @@ public class BTCService {
 
     public T2PartiallySigned submitFirstT2Signature(String t2Signature, String t2Raw, String pubKey, boolean signForGiver) {
 
+
+        int inputIndex = signForGiver ? 0 : 1;
+        Log.info("inputIndex: " + inputIndex);
+        Log.info("    pubKey: " + pubKey);
         //TODO:
         // 1. decode t2raw tx into byte[]
         byte[] t2Bytes = DatatypeConverter.parseHexBinary(t2Raw);
@@ -212,11 +216,11 @@ public class BTCService {
 
         // 3. convert signature to ECDSASignature and then TransactionSignature.java type
         byte[] t2SignatureBytes = DatatypeConverter.parseHexBinary(t2Signature);
-        ECKey.ECDSASignature t2ECDSASignature = ECKey.ECDSASignature.decodeFromDER(t2SignatureBytes);
-        Log.info("t2ECDSASignature: " + t2ECDSASignature);
+//        ECKey.ECDSASignature t2ECDSASignature = ECKey.ECDSASignature.decodeFromDER(t2SignatureBytes);
+//        Log.info("t2ECDSASignature: " + t2ECDSASignature);
 
-        TransactionSignature t2TransactionSignature = new TransactionSignature(t2ECDSASignature, SigHash.ALL, true);
-        Log.info("t2TransactionSignature.encodeToBitcoin: " + DatatypeConverter.printHexBinary(t2TransactionSignature.encodeToBitcoin()));
+        TransactionSignature t2TransactionSignature = TransactionSignature.decodeFromBitcoin(t2SignatureBytes, true);
+        Log.info("t2TransactionSignature.decodeFromBitcoin: " + DatatypeConverter.printHexBinary(t2TransactionSignature.encodeToBitcoin()));
 
         // 4. Decode pubkey
         byte[] pubkeyBytes = DatatypeConverter.parseHexBinary(pubKey);
@@ -234,11 +238,23 @@ public class BTCService {
         Log.info("         t2.serialize: " + DatatypeConverter.printHexBinary(t2.bitcoinSerialize()));
 
 
+        //check signature is ok
+        byte[] connectedScript = t2.getInput(inputIndex).getScriptBytes();
+        byte[] data = t2.hashForSignature(inputIndex, connectedScript, SigHash.ALL, true).getBytes();
+        ECKey.ECDSASignature signature = new ECKey.ECDSASignature(t2TransactionSignature.r, t2TransactionSignature.s);
+        boolean validSignature = ECKey.verify(data, signature, pubkeyBytes);
+
+        if (validSignature) {
+            Log.info("-----> Yay");
+        } else {
+            Log.info("-> Nay");
+        }
+
         return new T2PartiallySigned(t2);
     }
 
     private static class CreateIncompleteT2A {
-        private ECKey myKey;
+        private ECKey oracleKey;
         private ECKey aliceKey;
         private ECKey bobKey;
         private Transaction t2;
@@ -249,8 +265,8 @@ public class BTCService {
         private BigInteger value;
         private boolean txForGiver;
 
-        public CreateIncompleteT2A(ECKey myKey, ECKey aliceKey, ECKey bobKey, boolean txForGiver, BigInteger value) {
-            this.myKey = myKey;
+        public CreateIncompleteT2A(ECKey oracleKey, ECKey aliceKey, ECKey bobKey, boolean txForGiver, BigInteger value) {
+            this.oracleKey = oracleKey;
             this.aliceKey = aliceKey;
             this.bobKey = bobKey;
             this.value = value;
@@ -282,7 +298,7 @@ public class BTCService {
             // T2 Step A : "T2 without inputs, without signatures"
             t2 = getT2SA(aliceKey.getPubKey(), // giver
                     bobKey.getPubKey(),   // taker
-                    myKey.getPubKey(),    // event key
+                    oracleKey.getPubKey(),    // event key
                     value);
 
             // Add inputs to T2 and create hashes for alice and bob to sign

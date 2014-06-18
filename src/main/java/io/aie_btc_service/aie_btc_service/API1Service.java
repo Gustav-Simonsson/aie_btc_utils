@@ -51,7 +51,6 @@ public class API1Service {
             }
         });
 
-
         get(new Route("/get-incomplete-t2-A") {
             @Override
             public Object handle(Request request, Response response) {
@@ -102,8 +101,9 @@ public class API1Service {
 
                 Transaction t2 = new Transaction(new TestNet3Params(), t2Bytes);
 
-
-                fullClient.broadcast(t2);
+                if (!signForGiver) {
+                    fullClient.broadcast(t2);
+                }
 
                 return gson.toJson(t2PartiallySigned);
             }

@@ -84,9 +84,9 @@ public class SignIncompleteT2 {
 
         //5. send signed result to API to /submit-first-t2-signature
         url = "http://127.0.0.1:4567/submit-first-t2-signature?" + String.format("t2-signature=%s&t2-raw=%s&pubkey=%s&sign-for=%s",
-                URLEncoder.encode(DatatypeConverter.printHexBinary(aliceTransactionSignature.encodeToBitcoin())),
+                DatatypeConverter.printHexBinary(aliceTransactionSignature.encodeToBitcoin()),
                 URLEncoder.encode(result.getT2Raw()),
-                URLEncoder.encode(DatatypeConverter.printHexBinary(giverPubkey.getBytes())),
+                giverPubkey,
                 "giver"
         );
         client = (HttpURLConnection) new URL(url).openConnection();
@@ -104,9 +104,9 @@ public class SignIncompleteT2 {
         //
 
         url = "http://127.0.0.1:4567/submit-first-t2-signature?" + String.format("t2-signature=%s&t2-raw=%s&pubkey=%s&sign-for=%s",
-                URLEncoder.encode(DatatypeConverter.printHexBinary(bobTransactionSignature.encodeToBitcoin())),
+                DatatypeConverter.printHexBinary(bobTransactionSignature.encodeToBitcoin()),
                 URLEncoder.encode(t2PartiallySigned.getT2RawPartiallySigned()),
-                URLEncoder.encode(DatatypeConverter.printHexBinary(takerPubKey.getBytes())),
+                takerPubKey,
                 "taker"
         );
 
