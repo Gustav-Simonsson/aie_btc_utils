@@ -202,7 +202,6 @@ public class BTCService {
 
     public T2PartiallySigned submitFirstT2Signature(String t2Signature, String t2Raw, String pubKey, boolean signForGiver) {
 
-
         int inputIndex = signForGiver ? 0 : 1;
         Log.info("inputIndex: " + inputIndex);
         Log.info("    pubKey: " + pubKey);
@@ -228,8 +227,7 @@ public class BTCService {
         Log.info("ecPubKey: " + ecPubKey);
 
         Log.info("signForGiver: " + signForGiver);
-        // (5. Apply signature to Transaction)
-        // 6. Sign input 0 or 1
+        // 5. Add signature to one of the two inputs
         t2.getInput(signForGiver ? 0 : 1).setScriptSig(ScriptBuilder.createInputScript(t2TransactionSignature, ecPubKey));
 
         Log.info(" t2.getHashAsString(): " + t2.getHashAsString());
@@ -237,13 +235,13 @@ public class BTCService {
         Log.info("t2.input.scriptSig(1): " + t2.getInput(1).getScriptSig());
         Log.info("         t2.serialize: " + DatatypeConverter.printHexBinary(t2.bitcoinSerialize()));
 
-
-        //check signature is ok
+        // 6. Validate signature
         byte[] connectedScript = t2.getInput(inputIndex).getScriptBytes();
         byte[] data = t2.hashForSignature(inputIndex, connectedScript, SigHash.ALL, true).getBytes();
         ECKey.ECDSASignature signature = new ECKey.ECDSASignature(t2TransactionSignature.r, t2TransactionSignature.s);
         boolean validSignature = ECKey.verify(data, signature, pubkeyBytes);
 
+        // TODO: throw if signature is not valid and return some error in JSON response
         if (validSignature) {
             Log.info("-----> Yay");
         } else {
@@ -331,6 +329,11 @@ public class BTCService {
 
             StoredTransactionOutput sout = new StoredTransactionOutput(t2.getHash(), t2.getOutput(0), 0, false);
             Log.info("sout value: " + DatatypeConverter.printHexBinary(sout.getValue().toByteArray()));
+            /* TODO: only add open output to pg if accepted by network, or even better; patch
+               PostgresFullPrunedBlockStore to add it by itself when it sees the network ack
+               the broadcast. We want Bj stateless in terms of incomplete/partial txs; it should
+               only have state mirroring the blockchain.
+            */
             pg.insertOpenOutput(sout);
             return this;
         }
