@@ -35,9 +35,24 @@ public class SignIncompleteT2 {
 //        ECKey aliceKey = BTCService.getECKeyFromWalletImportFormat("92pJFTW3srGK11RDeWkXqVv3H1MvWd2xeqkB8W2eWFaftsoRGNk");
 //        ECKey bobKey = BTCService.getECKeyFromWalletImportFormat("92SL8DDiEpTiaqWHtHufG8vW2wpZkwSrL3796oUDV6yaWLM3qnB");
 
-        ECKey oracleKey = BTCService.getECKeyFromWalletImportFormat("cUssvG7iDD4ZZeMzgVDMpqwgbXfiv9XZipKYxF73Qn9JqtideQw2");
-        ECKey aliceKey = BTCService.getECKeyFromWalletImportFormat("cQPEgupjVLWtsx3YU3ukqnZ2de9gmJLj67SYKqdTxwGcUZn6a31W");
-        ECKey bobKey = BTCService.getECKeyFromWalletImportFormat("cTTdqnanz2MuF2xbNuVkutVZERs9QryjJVtFhNPZkwe6fmUz4VCS");
+        //TESTNET
+//        ECKey oracleKey = BTCService.getECKeyFromWalletImportFormat("cUssvG7iDD4ZZeMzgVDMpqwgbXfiv9XZipKYxF73Qn9JqtideQw2");
+//        ECKey aliceKey = BTCService.getECKeyFromWalletImportFormat("cQPEgupjVLWtsx3YU3ukqnZ2de9gmJLj67SYKqdTxwGcUZn6a31W");
+//        ECKey bobKey = BTCService.getECKeyFromWalletImportFormat("cTTdqnanz2MuF2xbNuVkutVZERs9QryjJVtFhNPZkwe6fmUz4VCS");
+
+//MAINNET
+/*
+11:05:51 30 .main: Oracle private Key: Kz3XP25cwgdpuWjz2ivbJbdrtrN5KLYGJX1hp4nF9Xaz8untnz11
+11:05:51 30 .main: Oracle     address: 1CaSvnFKW6DnEGUJVDyZ7FvLBAqX3WQ8v9
+11:05:51 30 .main: Alice (giver)  private Key: KyVTTGNzFwtxA7Kn8R9jEqqLWJLsGf1KkqtisfWWdaTZEV4Vbn3P
+11:05:51 30 .main: Alice              address: 1GdoRxhKcgj95nujg188X5Z7YaytDjv8o2
+11:05:51 30 .main: Bob (taker)  private Key: L1TCq6BgW3gyeuWQSNagoNUZWBQ3uGmgA9Ud2bFVddTAmW7qRYcE
+11:05:51 30 .main: Bob              address: 13BpPWgkBQSh566i1iejtdMmErq7ENagqV
+ */
+
+        ECKey oracleKey = BTCService.getECKeyFromWalletImportFormat("Kz3XP25cwgdpuWjz2ivbJbdrtrN5KLYGJX1hp4nF9Xaz8untnz11");
+        ECKey aliceKey = BTCService.getECKeyFromWalletImportFormat("KyVTTGNzFwtxA7Kn8R9jEqqLWJLsGf1KkqtisfWWdaTZEV4Vbn3P");
+        ECKey bobKey = BTCService.getECKeyFromWalletImportFormat("L1TCq6BgW3gyeuWQSNagoNUZWBQ3uGmgA9Ud2bFVddTAmW7qRYcE");
 
 
         String giverPubkey = DatatypeConverter.printHexBinary(aliceKey.getPubKey());

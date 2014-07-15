@@ -111,7 +111,7 @@ class TxListener2 implements PeerEventListener {
         return null;
     }
     public void onBlocksDownloaded(Peer p, Block b, int i) {
-        slf4jLogger.info("Block downloaded: ");
+        slf4jLogger.info("Block downloaded: i: " + i + ", Peer: " + p + ", block: " + b);
     }
     public void onChainDownloadStarted(Peer arg0, int arg1) {
         slf4jLogger.info("blockchain download started.");

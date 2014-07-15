@@ -26,7 +26,7 @@ public class CreateThreeWallets {
         ECKey bobKey = new ECKey();
         Log.info("Bob (taker)  private Key: " + bobKey.getPrivateKeyEncoded(NETWORK_PARAMETERS));
         Log.info("Bob              address: " + bobKey.toAddress(NETWORK_PARAMETERS));
-/*
+/* TESTNET!!!
 08:48:56 29 CreateThreeWallets.main: Oracle private Key: cUssvG7iDD4ZZeMzgVDMpqwgbXfiv9XZipKYxF73Qn9JqtideQw2
 08:48:56 29 CreateThreeWallets.main: Oracle     address: mjwtbiPTV23b61VPPw3dxAM689iimbmnH9
 08:48:56 29 CreateThreeWallets.main: Alice (giver)  private Key: cQPEgupjVLWtsx3YU3ukqnZ2de9gmJLj67SYKqdTxwGcUZn6a31W
@@ -34,6 +34,15 @@ public class CreateThreeWallets {
 08:48:56 29 CreateThreeWallets.main: Bob (taker)  private Key: cTTdqnanz2MuF2xbNuVkutVZERs9QryjJVtFhNPZkwe6fmUz4VCS
 08:48:56 29 CreateThreeWallets.main: Bob              address: msUM5rDq1HihtvZh2EnB7vQCx6oFUYFj7h   - 10 mBTC
  */
+/*
+11:05:51 30 .main: Oracle private Key: Kz3XP25cwgdpuWjz2ivbJbdrtrN5KLYGJX1hp4nF9Xaz8untnz11
+11:05:51 30 .main: Oracle     address: 1CaSvnFKW6DnEGUJVDyZ7FvLBAqX3WQ8v9
+11:05:51 30 .main: Alice (giver)  private Key: KyVTTGNzFwtxA7Kn8R9jEqqLWJLsGf1KkqtisfWWdaTZEV4Vbn3P
+11:05:51 30 .main: Alice              address: 1GdoRxhKcgj95nujg188X5Z7YaytDjv8o2
+11:05:51 30 .main: Bob (taker)  private Key: L1TCq6BgW3gyeuWQSNagoNUZWBQ3uGmgA9Ud2bFVddTAmW7qRYcE
+11:05:51 30 .main: Bob              address: 13BpPWgkBQSh566i1iejtdMmErq7ENagqV
+ */
+
     }
 
 }
