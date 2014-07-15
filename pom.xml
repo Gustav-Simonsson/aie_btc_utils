@@ -17,6 +17,8 @@
         <db.host>localhost</db.host>
         <db.password>localhost</db.password>
         <bitcoin.network>test</bitcoin.network>
+        <bitcoin.network.host>localhost</bitcoin.network.host>
+        <bitcoin.network.port>8333</bitcoin.network.port>
     </properties>
 
     <profiles>
@@ -28,6 +30,8 @@
                 <db.host>localhost</db.host>
                 <db.password/>
                 <bitcoin.network>test</bitcoin.network>
+                <bitcoin.network.host>localhost</bitcoin.network.host>
+                <bitcoin.network.port>8333</bitcoin.network.port>
             </properties>
         </profile>
         <profile>
@@ -38,6 +42,8 @@
                 <db.host>localhost</db.host>
                 <db.password>123</db.password>
                 <bitcoin.network>main</bitcoin.network>
+                <bitcoin.network.host>localhost</bitcoin.network.host>
+                <bitcoin.network.port>8333</bitcoin.network.port>
             </properties>
         </profile>
     </profiles>
