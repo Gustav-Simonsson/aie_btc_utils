@@ -38,7 +38,7 @@
             <id>order3</id>
             <properties>
                 <db.name>full_mainnet</db.name>
-                <db.username>biafra</db.username>
+                <db.username>postgres</db.username>
                 <db.host>localhost</db.host>
                 <db.password>123</db.password>
                 <bitcoin.network>main</bitcoin.network>
