@@ -5,30 +5,36 @@ import com.google.bitcoin.core.*;
 import com.google.bitcoin.net.discovery.DnsDiscovery;
 import com.google.bitcoin.net.discovery.PeerDiscovery;
 import com.google.bitcoin.net.discovery.PeerDiscoveryException;
+import com.google.bitcoin.params.MainNetParams;
 import com.google.bitcoin.params.TestNet3Params;
 import com.google.bitcoin.store.BlockStoreException;
 import com.google.bitcoin.store.PostgresFullPrunedBlockStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
+import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
 public class FullClient {
 
     public static final Logger Log = LoggerFactory.getLogger(FullClient.class);
-    public final static NetworkParameters NETWORK_PARAMETERS = new TestNet3Params();
-    public static final String DB_HOST = "localhost";
-    public static final String DB_NAME = "aie_bitcoin3";
-//    public static final String DB_NAME = "aie_bitcoin2";
-    public static final String DB_USER = "biafra";
-    public static final String DB_PASSWORD = "";
+    public static NetworkParameters NETWORK_PARAMETERS;
+    //    public final static NetworkParameters NETWORK_PARAMETERS = new TestNet3Params();
+    public static String DB_HOST;
+    public static String DB_NAME;
+    public static String DB_USER;
+    public static String DB_PASSWORD;
     private static PostgresFullPrunedBlockStore blockStore;
 
     public static void main(String[] args) {
+
+
         new FullClient().run();
     }
 
@@ -36,27 +42,38 @@ public class FullClient {
 
     public void run() {
 
+        Properties properties = getProperties();
+
+        DB_HOST = properties.getProperty("db.host");
+        DB_NAME = properties.getProperty("db.name");
+        DB_USER = properties.getProperty("db.username");
+        DB_PASSWORD = properties.getProperty("db.password");
+
+        String networkParameterProperty = properties.getProperty("bitcoin.network");
+
+        if ("main".equals(networkParameterProperty)) {
+            NETWORK_PARAMETERS = new MainNetParams();
+        } else if ("test".equals(networkParameterProperty)) {
+            NETWORK_PARAMETERS = new TestNet3Params();
+        } else {
+            Log.info("Please define bitcoin.network property");
+            System.exit(110);
+        }
+
+        Log.info("FullClient,run() called");
         connectBlockChain();
 
-//        String[] addresses = new String[]{
-//                "18Nnr1236PeuVXpceXKbDJbAhWK6dYxaS9",
-//                "1Dh2Pzbqe15QPsrHXrurLCHpY28K6ZGQMx",
-//                "1PBuXpUVcLZEpoTSRC1tLpyV6xtGCvEeJR",
-//                "1KBmj2QQs9yiq3wW2jEJuVnuBybWvLv6fV",
-//                "1E1xPBdS85g8Eocs28NRHU4JQ1PEdbVgPg",
-//                "1LttvufSeNniUFTMRJq46ZRbLhZoQvFVNJ"
-//        };
-//        for (String address : addresses) {
-//            try {
-//
-//                getBalanceForAddress(address);
-//
-//            } catch (BlockStoreException e) {
-//                Log.error("Exception while calculating balance", e);
-//            } catch (AddressFormatException e) {
-//                Log.error("Exception while calculating balance", e);
-//            }
-//        }
+    }
+
+    private Properties getProperties() {
+        InputStream inputStream = getClass().getClassLoader().getResourceAsStream("application.properties");
+        Properties properties = new Properties();
+        try {
+            properties.load(inputStream);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return properties;
     }
 
     private void connectBlockChain() {
@@ -65,7 +82,8 @@ public class FullClient {
 
             blockStore = new PostgresFullPrunedBlockStore(NETWORK_PARAMETERS, 10000, DB_HOST, DB_NAME, DB_USER, DB_PASSWORD);
             FullPrunedBlockChain blockChain = new FullPrunedBlockChain(NETWORK_PARAMETERS, blockStore);
-            PeerDiscovery peerDiscovery = new DnsDiscovery(NETWORK_PARAMETERS);
+//            PeerDiscovery peerDiscovery = new DnsDiscovery(NETWORK_PARAMETERS);
+            PeerDiscovery peerDiscovery = getLocalHostPeerDiscovery();
 
             //faster
             blockChain.setRunScripts(false);
@@ -90,9 +108,9 @@ public class FullClient {
             PeerEventListener listener = new TxListener2();
             peerGroup.addEventListener(listener);
 
-            Log.info("calling startAndWait...");
+            Log.info("calling start()...");
 
-            peerGroup.startAndWait();
+            peerGroup.start();
             Log.info("Starting up. Soon ready for Queries.");
 
         } catch (BlockStoreException e) {
@@ -100,7 +118,6 @@ public class FullClient {
             Log.error("Exception while opening blockstore", e);
 
         }
-
     }
 
     public static BigInteger getBalanceForAddress(String address) throws BlockStoreException, AddressFormatException {
@@ -117,8 +134,9 @@ public class FullClient {
         return new PeerDiscovery() {
             @Override
             public InetSocketAddress[] getPeers(long timeoutValue, TimeUnit timeoutUnit) throws PeerDiscoveryException {
+                Log.info("getPeers()");
                 InetSocketAddress[] result = new InetSocketAddress[1];
-                result[0] = new InetSocketAddress(DB_HOST, 8333);
+                result[0] = new InetSocketAddress("localhost", 8333);
                 return result;
             }
 
