@@ -18,7 +18,11 @@
         <db.password>localhost</db.password>
         <bitcoin.network>test</bitcoin.network>
         <bitcoin.network.host>localhost</bitcoin.network.host>
+        <!-- mainnet -->
         <bitcoin.network.port>8333</bitcoin.network.port>
+        <!-- testnet -->
+        <!--<bitcoin.network.port>18333</bitcoin.network.port>-->
+        <bitcoin.runscripts>false</bitcoin.runscripts>
     </properties>
 
     <profiles>
@@ -32,6 +36,7 @@
                 <bitcoin.network>test</bitcoin.network>
                 <bitcoin.network.host>localhost</bitcoin.network.host>
                 <bitcoin.network.port>8333</bitcoin.network.port>
+                <bitcoin.runscripts>false</bitcoin.runscripts>
             </properties>
         </profile>
         <profile>
@@ -44,6 +49,7 @@
                 <bitcoin.network>main</bitcoin.network>
                 <bitcoin.network.host>localhost</bitcoin.network.host>
                 <bitcoin.network.port>8333</bitcoin.network.port>
+                <bitcoin.runscripts>false</bitcoin.runscripts>
             </properties>
         </profile>
     </profiles>
@@ -57,7 +63,7 @@
         <dependency>
             <groupId>com.google</groupId>
             <artifactId>bitcoinj</artifactId>
-            <version>0.11.3</version>
+            <version>0.11.2</version>
             <scope>compile</scope>
         </dependency>
         <!--<dependency>-->

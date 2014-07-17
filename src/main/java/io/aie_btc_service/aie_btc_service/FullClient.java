@@ -9,6 +9,7 @@ import com.google.bitcoin.params.MainNetParams;
 import com.google.bitcoin.params.TestNet3Params;
 import com.google.bitcoin.store.BlockStoreException;
 import com.google.bitcoin.store.PostgresFullPrunedBlockStore;
+import com.google.bitcoin.utils.BriefLogFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,11 +31,11 @@ public class FullClient {
     public static String DB_NAME;
     public static String DB_USER;
     public static String DB_PASSWORD;
+    public static boolean BITCOIN_RUNSCRIPTS;
+    private static boolean BITCOIN_NETWORK_LOCALHOST;
     private static PostgresFullPrunedBlockStore blockStore;
 
     public static void main(String[] args) {
-
-
         new FullClient().run();
     }
 
@@ -42,12 +43,16 @@ public class FullClient {
 
     public void run() {
 
+        BriefLogFormatter.init();
+
         Properties properties = getProperties();
 
         DB_HOST = properties.getProperty("db.host");
         DB_NAME = properties.getProperty("db.name");
         DB_USER = properties.getProperty("db.username");
         DB_PASSWORD = properties.getProperty("db.password");
+        BITCOIN_RUNSCRIPTS = "true".equals(properties.getProperty("bitcoin.runscripts"));
+        BITCOIN_NETWORK_LOCALHOST = "localhost".equals(properties.getProperty("bitcoin.network.host"));
 
         String networkParameterProperty = properties.getProperty("bitcoin.network");
 
@@ -59,8 +64,8 @@ public class FullClient {
             Log.info("Please define bitcoin.network property");
             System.exit(110);
         }
-
-        Log.info("FullClient,run() called");
+        Log.info("BITCOIN_RUNSCRIPTS: " + BITCOIN_RUNSCRIPTS);
+        Log.info("FullClient.run() called");
         connectBlockChain();
 
     }
@@ -80,43 +85,32 @@ public class FullClient {
 
         try {
 
-            blockStore = new PostgresFullPrunedBlockStore(NETWORK_PARAMETERS, 10000, DB_HOST, DB_NAME, DB_USER, DB_PASSWORD);
+            blockStore = new PostgresFullPrunedBlockStore(NETWORK_PARAMETERS, 0, DB_HOST, DB_NAME, DB_USER, DB_PASSWORD);
             FullPrunedBlockChain blockChain = new FullPrunedBlockChain(NETWORK_PARAMETERS, blockStore);
-//            PeerDiscovery peerDiscovery = new DnsDiscovery(NETWORK_PARAMETERS);
-            PeerDiscovery peerDiscovery = getLocalHostPeerDiscovery();
 
-            //faster
-            blockChain.setRunScripts(false);
+            PeerDiscovery peerDiscovery;
+            if (BITCOIN_NETWORK_LOCALHOST) {
+                peerDiscovery = getLocalHostPeerDiscovery();
+            } else {
+                peerDiscovery = new DnsDiscovery(NETWORK_PARAMETERS);
+            }
+
+            //faster if false
+            blockChain.setRunScripts(BITCOIN_RUNSCRIPTS);
 
             peerGroup = new PeerGroup(NETWORK_PARAMETERS, blockChain);
             peerGroup.addPeerDiscovery(peerDiscovery);
-            InetAddress ia = null;
-            InetAddress ia2 = null;
-            InetAddress ia3 = null;
-            InetAddress ia4 = null;
-            try {
-                ia  = InetAddress.getByName("54.243.211.176");
-                ia2 = InetAddress.getByName("148.251.6.214");
-                ia3 = InetAddress.getByName("188.226.139.138");
-                ia4 = InetAddress.getByName("144.76.165.115");
-            } catch (UnknownHostException e){ Log.error("omg :O " + e);};
-            peerGroup.addAddress(new PeerAddress(ia, 18333));
-            peerGroup.addAddress(new PeerAddress(ia2, 18333));
-            peerGroup.addAddress(new PeerAddress(ia3, 18333));
-            peerGroup.addAddress(new PeerAddress(ia4, 18333));
 
-            PeerEventListener listener = new TxListener2();
-            peerGroup.addEventListener(listener);
+//            PeerEventListener listener = new TxListener2();
+//            peerGroup.addEventListener(listener);
 
-            Log.info("calling start()...");
-
+//            peerGroup.startBlockChainDownload(listener);
             peerGroup.start();
             Log.info("Starting up. Soon ready for Queries.");
 
         } catch (BlockStoreException e) {
 
-            Log.error("Exception while opening blockstore", e);
-
+            Log.error("Exception while opening block store", e);
         }
     }
 
@@ -134,7 +128,6 @@ public class FullClient {
         return new PeerDiscovery() {
             @Override
             public InetSocketAddress[] getPeers(long timeoutValue, TimeUnit timeoutUnit) throws PeerDiscoveryException {
-                Log.info("getPeers()");
                 InetSocketAddress[] result = new InetSocketAddress[1];
                 result[0] = new InetSocketAddress("localhost", 8333);
                 return result;
