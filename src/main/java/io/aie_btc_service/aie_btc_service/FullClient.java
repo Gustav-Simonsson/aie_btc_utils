@@ -43,7 +43,7 @@ public class FullClient {
 
     public void run() {
 
-        BriefLogFormatter.init();
+        BriefLogFormatter.initVerbose();
 
         Properties properties = getProperties();
 
@@ -64,6 +64,11 @@ public class FullClient {
             Log.info("Please define bitcoin.network property");
             System.exit(110);
         }
+        Log.info("DB_NAME: " + DB_NAME);
+        Log.info("DB_USER: " + DB_USER);
+        Log.info("DB_HOST: " + DB_HOST);
+        Log.info("NETWORK_PARAMETERS.getId()  : " + NETWORK_PARAMETERS.getId());
+        Log.info("NETWORK_PARAMETERS.getPort(): " + NETWORK_PARAMETERS.getPort());
         Log.info("BITCOIN_RUNSCRIPTS: " + BITCOIN_RUNSCRIPTS);
         Log.info("FullClient.run() called");
         connectBlockChain();
