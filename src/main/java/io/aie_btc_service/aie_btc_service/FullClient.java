@@ -158,7 +158,7 @@ public class FullClient {
 
         t2.verify();
 
-        peerGroup.broadcastTransaction(t2, 2);
+        peerGroup.broadcastTransaction(t2, 1);
 
     }
 }
