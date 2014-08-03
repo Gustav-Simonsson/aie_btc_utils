@@ -239,10 +239,10 @@ public class BTCService {
 
 
         //check signature is ok
-        byte[] connectedScript = t2.getInput(inputIndex).getScriptBytes();
-        byte[] data = t2.hashForSignature(inputIndex, connectedScript, SigHash.ALL, true).getBytes();
+        byte[] scriptSig = t2.getInput(inputIndex).getScriptBytes();
+        byte[] hashForSignature = t2.hashForSignature(inputIndex, scriptSig, SigHash.ALL, true).getBytes();
         ECKey.ECDSASignature signature = new ECKey.ECDSASignature(t2TransactionSignature.r, t2TransactionSignature.s);
-        boolean validSignature = ECKey.verify(data, signature, pubkeyBytes);
+        boolean validSignature = ECKey.verify(hashForSignature, signature, pubkeyBytes);
 
         if (validSignature) {
             Log.info("-----> Yay");
