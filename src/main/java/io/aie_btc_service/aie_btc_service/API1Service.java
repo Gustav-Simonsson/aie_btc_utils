@@ -51,7 +51,7 @@ public class API1Service {
             }
         });
 
-        get(new Route("/get-incomplete-t2-A") {
+        get(new Route("/get-unsigned-t2") {
             @Override
             public Object handle(Request request, Response response) {
 
@@ -77,7 +77,7 @@ public class API1Service {
 
         });
 
-        get(new Route("/submit-first-t2-signature") {
+        get(new Route("/submit-t2-signature") {
             @Override
             public Object handle(Request request, Response response) {
 
