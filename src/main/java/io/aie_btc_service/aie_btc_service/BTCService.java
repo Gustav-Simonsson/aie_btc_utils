@@ -310,13 +310,17 @@ public class BTCService {
 
             Log.info("                    aliceKey: " + aliceKey);
             Log.info("             unsignedAliceOO: " + unsignedAliceOO);
-            Log.info("       unsignedAliceOO.index: " + unsignedAliceOO.index);
-            Log.info(" unsignedAliceOO.hash.length: " + unsignedAliceOO.hash.length);
+            if (unsignedAliceOO != null) {
+                Log.info("       unsignedAliceOO.index: " + unsignedAliceOO.index);
+                Log.info(" unsignedAliceOO.hash.length: " + unsignedAliceOO.hash.length);
+            }
 
             Log.info("                      bobKey: " + bobKey);
             Log.info("               unsignedBobOO: " + unsignedBobOO);
-            Log.info("         unsignedBobOO.index: " + unsignedBobOO.index);
-            Log.info("   unsignedBobOO.hash.length: " + unsignedBobOO.hash.length);
+            if (unsignedBobOO != null) {
+                Log.info("         unsignedBobOO.index: " + unsignedBobOO.index);
+                Log.info("   unsignedBobOO.hash.length: " + unsignedBobOO.hash.length);
+            }
 
             TransactionOutPoint aliceT1OutPoint = new TransactionOutPoint(NETWORK_PARAMETERS, (long) unsignedAliceOO.index, new Sha256Hash(unsignedAliceOO.hash));
             TransactionOutPoint bobT1OutPoint = new TransactionOutPoint(NETWORK_PARAMETERS, (long) unsignedBobOO.index, new Sha256Hash(unsignedBobOO.hash));
