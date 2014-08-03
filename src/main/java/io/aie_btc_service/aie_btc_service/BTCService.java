@@ -329,6 +329,7 @@ public class BTCService {
             Log.info("t2HashForAlice: " + t2HashForAlice);
             Log.info("  t2HashForBob: " + t2HashForBob);
 
+            //TODO: move this function after the transaction broadcast is confirmed
             StoredTransactionOutput sout = new StoredTransactionOutput(t2.getHash(), t2.getOutput(0), 0, false);
             Log.info("sout value: " + DatatypeConverter.printHexBinary(sout.getValue().toByteArray()));
             pg.insertOpenOutput(sout);
