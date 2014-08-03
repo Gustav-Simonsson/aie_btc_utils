@@ -55,21 +55,17 @@ public class API1Service {
             @Override
             public Object handle(Request request, Response response) {
 
-
                 if (!checkQueryParameters(request, "giver-pubkey",
-                        "taker-pubkey", "event-pubkey", "owner-of-input-to-sign", "value")) {
+                        "taker-pubkey", "event-pubkey", "value")) {
                     return "ERROR: Parameter(s) missing";
                 }
                 response.header("Content-type", "text/plain");
                 long value = Long.parseLong(request.queryParams("value"));
 
-                boolean txForGiver = "giver".equalsIgnoreCase(request.queryParams("owner-of-input-to-sign"));
-
                 IncompleteT2WithHash t2WithHash = btcService.createIncompleteT2WithHash(
                         request.queryParams("giver-pubkey"),
                         request.queryParams("taker-pubkey"),
                         request.queryParams("event-pubkey"),
-                        txForGiver,
                         new BigInteger("" + value));
 
                 return gson.toJson(new IncompleteT2AResponse(t2WithHash));

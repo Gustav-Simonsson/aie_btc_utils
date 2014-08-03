@@ -33,7 +33,7 @@ public class BTCService {
     public static final SigHash sigHashAll = Transaction.SigHash.ALL;
 
     public IncompleteT2WithHash createIncompleteT2WithHash(String giverKey, String takerKey,
-                                                           String eventKey, boolean txForGiver, BigInteger value) {
+                                                           String eventKey, BigInteger value) {
 
         // add harcoded testnet priv keys here for testing
 //        ECKey oracleKey = getECKeyFromWalletImportFormat("92r2FtYSQcqQMgzoXs3AzDAtu7Q3hgXmRD2HpcDM7g7UgArcxq6");
@@ -76,7 +76,7 @@ public class BTCService {
         Log.info("bobAddress: " + bobKey.toAddress(NETWORK_PARAMETERS));
 
         /* create T2 */
-        CreateIncompleteT2A createIncompleteT2A = new CreateIncompleteT2A(oracleKey, aliceKey, bobKey, txForGiver, value).invoke();
+        CreateIncompleteT2A createIncompleteT2A = new CreateIncompleteT2A(oracleKey, aliceKey, bobKey, value).invoke();
         Transaction t2 = createIncompleteT2A.getT2();
         Sha256Hash t2HashForSigning = createIncompleteT2A.getT2HashForSigning();
         Sha256Hash t2HashForSigning2 = createIncompleteT2A.getT2HashForSigning2();
@@ -100,20 +100,20 @@ public class BTCService {
                                       byte[] takerPubKey,
                                       byte[] eventPubKey,
                                       BigInteger SatoshiAmount
-                                      ) {
+    ) {
         /* Validations:
            1. Each pubkey is a different one
            2. The amount in satoshis is sufficiently bigger than dust amount
          */
         checkMinimumAmount(SatoshiAmount, "10"); // TODO: what multiple?
-        if ((giverPubKey == takerPubKey)  ||
-            (giverPubKey == eventPubKey)  ||
-            (takerPubKey == eventPubKey)) {
+        if ((giverPubKey == takerPubKey) ||
+                (giverPubKey == eventPubKey) ||
+                (takerPubKey == eventPubKey)) {
             throw new RuntimeException("giver, taker, event pubkeys " +
-                                       "not unique: " +
-                                       giverPubKey + ", " +
-                                       takerPubKey + ", " +
-                                       eventPubKey);
+                    "not unique: " +
+                    giverPubKey + ", " +
+                    takerPubKey + ", " +
+                    eventPubKey);
         }
         // NOTE: These ECKeys contain only the public part of the EC key pair.
         ECKey giverKey = new ECKey(null, giverPubKey);
@@ -135,8 +135,8 @@ public class BTCService {
                                           byte[] t1OutputScriptBytes) {
         // Add input from either giver or taker
         // one of them can already be present and signed
-        int outputCount    = t2.getOutputs().size();
-        int inputCount     = t2.getInputs().size();
+        int outputCount = t2.getOutputs().size();
+        int inputCount = t2.getInputs().size();
         boolean firstInput = inputCount == 0;
         if (inputCount > 1) {
             // TODO: design proper exception classes
@@ -173,8 +173,8 @@ public class BTCService {
 
         spendTx.addOutput(BigInteger.valueOf(spendAmount), toAddress);
         spendTx.addOutput(BigInteger.valueOf(change), fromAddress);
-         TransactionSignature txSign =
-            spendTx.calculateSignature(0, signKey, new Script(oo.scriptbytes), sigHashAll, false);
+        TransactionSignature txSign =
+                spendTx.calculateSignature(0, signKey, new Script(oo.scriptbytes), sigHashAll, false);
         spendTx.getInput(0).setScriptSig(ScriptBuilder.createInputScript(txSign, signKey));
         spendTx.verify();
         return spendTx;
@@ -193,8 +193,7 @@ public class BTCService {
         ECKey key = new ECKey();
         try {
             key = (new DumpedPrivateKey(NETWORK_PARAMETERS, s)).getKey();
-        }
-        catch (AddressFormatException e) {
+        } catch (AddressFormatException e) {
             Log.error("Caught AddressFormatException: ", e);
         }
         return key;
@@ -264,14 +263,12 @@ public class BTCService {
         private Sha256Hash t2HashForAlice;
         private Sha256Hash t2HashForBob;
         private BigInteger value;
-        private boolean txForGiver;
 
-        public CreateIncompleteT2A(ECKey oracleKey, ECKey aliceKey, ECKey bobKey, boolean txForGiver, BigInteger value) {
+        public CreateIncompleteT2A(ECKey oracleKey, ECKey aliceKey, ECKey bobKey, BigInteger value) {
             this.oracleKey = oracleKey;
             this.aliceKey = aliceKey;
             this.bobKey = bobKey;
             this.value = value;
-            this.txForGiver = txForGiver;
         }
 
         public Transaction getT2() {
@@ -287,6 +284,7 @@ public class BTCService {
 
             return t2HashForBob;
         }
+
         public OpenOutput getUnsignedAliceOO() {
             return unsignedAliceOO;
         }
@@ -322,22 +320,24 @@ public class BTCService {
                 Log.info("   unsignedBobOO.hash.length: " + unsignedBobOO.hash.length);
             }
 
-            TransactionOutPoint aliceT1OutPoint = new TransactionOutPoint(NETWORK_PARAMETERS, (long) unsignedAliceOO.index, new Sha256Hash(unsignedAliceOO.hash));
-            TransactionOutPoint bobT1OutPoint = new TransactionOutPoint(NETWORK_PARAMETERS, (long) unsignedBobOO.index, new Sha256Hash(unsignedBobOO.hash));
+            if (unsignedBobOO != null && unsignedAliceOO != null) {
+                TransactionOutPoint aliceT1OutPoint = new TransactionOutPoint(NETWORK_PARAMETERS, (long) unsignedAliceOO.index, new Sha256Hash(unsignedAliceOO.hash));
+                TransactionOutPoint bobT1OutPoint = new TransactionOutPoint(NETWORK_PARAMETERS, (long) unsignedBobOO.index, new Sha256Hash(unsignedBobOO.hash));
 
-            TransactionInput aliceT1Input = new TransactionInput(NETWORK_PARAMETERS, null, new byte[]{}, aliceT1OutPoint);
-            TransactionInput bobT1Input = new TransactionInput(NETWORK_PARAMETERS, null, new byte[]{}, bobT1OutPoint);
+                TransactionInput aliceT1Input = new TransactionInput(NETWORK_PARAMETERS, null, new byte[]{}, aliceT1OutPoint);
+                TransactionInput bobT1Input = new TransactionInput(NETWORK_PARAMETERS, null, new byte[]{}, bobT1OutPoint);
 
-            t2HashForAlice = addInputToT2(t2, aliceT1Input, unsignedAliceOO.scriptbytes);
-            t2HashForBob = addInputToT2(t2, bobT1Input, unsignedBobOO.scriptbytes);
+                t2HashForAlice = addInputToT2(t2, aliceT1Input, unsignedAliceOO.scriptbytes);
+                t2HashForBob = addInputToT2(t2, bobT1Input, unsignedBobOO.scriptbytes);
 
-            Log.info("t2HashForAlice: " + t2HashForAlice);
-            Log.info("  t2HashForBob: " + t2HashForBob);
+                Log.info("t2HashForAlice: " + t2HashForAlice);
+                Log.info("  t2HashForBob: " + t2HashForBob);
 
-            //TODO: move this function after the transaction broadcast is confirmed
-            StoredTransactionOutput sout = new StoredTransactionOutput(t2.getHash(), t2.getOutput(0), 0, false);
-            Log.info("sout value: " + DatatypeConverter.printHexBinary(sout.getValue().toByteArray()));
-            pg.insertOpenOutput(sout);
+                //TODO: move this function after the transaction broadcast is confirmed
+                StoredTransactionOutput sout = new StoredTransactionOutput(t2.getHash(), t2.getOutput(0), 0, false);
+                Log.info("sout value: " + DatatypeConverter.printHexBinary(sout.getValue().toByteArray()));
+                pg.insertOpenOutput(sout);
+            }
             return this;
         }
     }

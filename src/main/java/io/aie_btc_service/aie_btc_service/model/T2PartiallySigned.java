@@ -9,6 +9,8 @@ public class T2PartiallySigned {
 
     private String newT2Hash;
     private String t2RawPartiallySigned;
+    //TODO: needs to be implemented
+    private boolean t2Broadcasted = true;
 
 
     public T2PartiallySigned(Transaction t) {
@@ -42,6 +44,7 @@ public class T2PartiallySigned {
         return "T2PartiallySigned{" +
                 "newT2Hash='" + newT2Hash + '\'' +
                 ", t2RawPartiallySigned='" + t2RawPartiallySigned + '\'' +
+                ", t2Broadcasted=" + t2Broadcasted +
                 '}';
     }
 }

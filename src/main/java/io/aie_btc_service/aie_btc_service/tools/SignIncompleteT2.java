@@ -28,6 +28,7 @@ public class SignIncompleteT2 {
 
     public static void main(String[] args) throws Exception {
 
+        String baseUrl = "" ;
         init();
         //Secretkey:
         // add harcoded testnet priv keys here for testing
@@ -63,7 +64,7 @@ public class SignIncompleteT2 {
         long value = 100000;
 
         //1. prepare request for getting unsigned T2A
-        String url = "http://127.0.0.1:4567/get-incomplete-t2-A?" + String.format("giver-pubkey=%s&taker-pubkey=%s&event-pubkey=%s&value=%s&owner-of-input-to-sign=%s",
+        String url = "http://127.0.0.1:4567/get-unsigned-t2?" + String.format("giver-pubkey=%s&taker-pubkey=%s&event-pubkey=%s&value=%s&owner-of-input-to-sign=%s",
                 URLEncoder.encode(giverPubkey),
                 URLEncoder.encode(takerPubKey),
                 URLEncoder.encode(oraclePubKey),
@@ -73,7 +74,7 @@ public class SignIncompleteT2 {
         );
         HttpURLConnection client = (HttpURLConnection) new URL(url).openConnection();
 
-        Log.info("Url.get-incomplete-t2-A: " + url);
+        Log.info("Url.get-incomplete-t2: " + url);
 
         //2. issue request
         client.connect();
