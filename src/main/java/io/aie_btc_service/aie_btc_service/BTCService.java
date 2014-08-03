@@ -223,6 +223,7 @@ public class BTCService {
         Log.info("t2TransactionSignature.decodeFromBitcoin: " + DatatypeConverter.printHexBinary(t2TransactionSignature.encodeToBitcoin()));
 
         // 4. Decode pubkey
+        // TODO: change from hex bin to base64 for more standarised serialisation
         byte[] pubkeyBytes = DatatypeConverter.parseHexBinary(pubKey);
         ECKey ecPubKey = new ECKey(null, pubkeyBytes, false);
         Log.info("ecPubKey: " + ecPubKey);
