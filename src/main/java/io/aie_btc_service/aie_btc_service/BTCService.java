@@ -105,7 +105,7 @@ public class BTCService {
            1. Each pubkey is a different one
            2. The amount in satoshis is sufficiently bigger than dust amount
          */
-        checkMinimumAmount(SatoshiAmount, "10"); // TODO: what multiple?
+        checkMinimumAmount(SatoshiAmount, "2"); // TODO: what multiple?
         if ((giverPubKey == takerPubKey) ||
                 (giverPubKey == eventPubKey) ||
                 (takerPubKey == eventPubKey)) {
