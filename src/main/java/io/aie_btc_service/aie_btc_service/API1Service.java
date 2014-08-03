@@ -121,7 +121,7 @@ public class API1Service {
 
         for (String parameterName : parameterNames) {
 
-            Log.info("request.params(parameterName): " + request.queryParams(parameterName));
+            Log.info("request.params(" + parameterName + "): " + request.queryParams(parameterName));
             if (request.queryParams(parameterName) == null) {
                 Log.error("Parameter missing: " + parameterName);
                 return false;
