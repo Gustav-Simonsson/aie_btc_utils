@@ -85,7 +85,8 @@ public class BTCService {
         Log.info("t2HashForSigning2: " + t2HashForSigning2);
 
         // t2 has the multisig output and inputs from alice and bob
-        t2.verify();
+        //TODO: reenable open output
+//        t2.verify();
 //        Log.info("unsignedOO.value: " + DatatypeConverter.printHexBinary(aliceOO.value));
         Log.info("           t2: " + t2);
         Log.info("      t2.hash: " + t2.getHashAsString());
