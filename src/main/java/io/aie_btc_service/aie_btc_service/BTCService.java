@@ -16,6 +16,7 @@ import com.google.bitcoin.script.ScriptBuilder;
 import com.google.bitcoin.store.BlockStoreException;
 import com.google.common.collect.ImmutableList;
 
+import io.aie_btc_service.aie_btc_service.model.IncompleteT3WithHash;
 import io.aie_btc_service.aie_btc_service.model.T2PartiallySigned;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,7 +34,7 @@ public class BTCService {
     public static final SigHash sigHashAll = Transaction.SigHash.ALL;
 
     public IncompleteT2WithHash createIncompleteT2WithHash(String giverKey, String takerKey,
-                                                           String eventKey, BigInteger value) {
+                                                           String eventKey, BigInteger value) throws Exception {
 
         // add harcoded testnet priv keys here for testing
 //        ECKey oracleKey = getECKeyFromWalletImportFormat("92r2FtYSQcqQMgzoXs3AzDAtu7Q3hgXmRD2HpcDM7g7UgArcxq6");
@@ -60,11 +61,12 @@ public class BTCService {
             Log.info("bobKey.balance: " + FullClient.getBalanceForAddress(bobKey.toAddress(NETWORK_PARAMETERS).toString()));
             Log.info("-------------------------------------------------------");
 
-
         } catch (BlockStoreException e) {
             e.printStackTrace();
+            throw e;
         } catch (AddressFormatException e) {
             e.printStackTrace();
+            throw e;
         }
 
 
@@ -252,6 +254,10 @@ public class BTCService {
         }
 
         return new T2PartiallySigned(t2);
+    }
+
+    public IncompleteT3WithHash createUnsignedT3(String s, String s1) {
+        throw new RuntimeException("Not implemented yet");
     }
 
     private static class CreateIncompleteT2A {
