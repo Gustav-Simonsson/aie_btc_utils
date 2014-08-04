@@ -6,6 +6,7 @@ import com.google.bitcoin.core.StoredTransactionOutput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.xml.bind.DatatypeConverter;
 import java.sql.*;
 import java.util.*;
 
@@ -140,4 +141,42 @@ public class Postgres {
         allConnections.clear();
     }
 
+
+    public OpenOutput getOpenOutputForTxHash(String t2HashString) {
+        Log.info("getOpenOutput(): t2Hash: " + t2HashString);
+
+        byte[] t2Hash = DatatypeConverter.parseHexBinary(t2HashString);
+
+        maybeConnect();
+        PreparedStatement s = null;
+        OpenOutput oo = null;
+        try {
+            s = conn.get().prepareStatement("SELECT hash, index, value, scriptbytes " +
+                    "FROM openOutputs WHERE hash = ?");
+            s.setBytes(1, t2Hash);
+            ResultSet res = s.executeQuery();
+            Log.info("SQL res: " + res.toString());
+            if (res.next()) {
+                byte[] hash = res.getBytes(1);
+                int index = res.getInt(2);
+                byte[] value = res.getBytes(3);
+                byte[] scriptBytes = res.getBytes(4);
+                oo = new OpenOutput(hash, index, value, scriptBytes);
+                return oo;
+            } else {
+                Log.error("SQL query failed :O :O ");
+                return oo;
+            }
+        } catch (SQLException ex) {
+            Log.error("SQLException :O " + ex);
+            return oo;
+        } finally {
+            if (s != null)
+                try {
+                    s.close();
+                } catch (SQLException ex2) {
+                    Log.error("SQLException :O " + ex2);
+                }
+        }
+    }
 }

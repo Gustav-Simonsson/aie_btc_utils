@@ -248,22 +248,26 @@ public class BTCService {
         return new T2PartiallySigned(t2);
     }
 
-    public IncompleteT3WithHash createUnsignedT3(String t2Hash, String toAddressString) throws AddressFormatException {
+    public IncompleteT3WithHash createUnsignedT3(String t2HashString, String toAddressString) throws AddressFormatException {
         Address toAddress = new Address(NETWORK_PARAMETERS, toAddressString);
-
+        byte[] t2Hash = DatatypeConverter.parseHexBinary(t2HashString);
+        Postgres pg = new Postgres(FullClient.DB_HOST, FullClient.DB_NAME, FullClient.DB_USER, FullClient.DB_PASSWORD);
+        Transaction t2 = null;
+        BigInteger value = null;
 
 //1. Create a new Transaction object (t3)
         Transaction t3 = new Transaction(NETWORK_PARAMETERS); // empty tx
 //2. Dig up the t2 open output (the one we should have manually put in DB, since it's not added automatically by bitcoinj PostgresFullPrunedBlockStore)
 //2.b) Find t2 via t2Hash
-        TransactionOutput t2Output = null; // new TransactionOutput(NETWORK_PARAMETERS, );
+        OpenOutput openOutput = pg.getOpenOutputForTxHash(t2HashString); // new TransactionOutput(NETWORK_PARAMETERS, );
+//2.c) Transform OpenOutput to TransactionOutput
+        TransactionOutput t2Output = new TransactionOutput(NETWORK_PARAMETERS, t2, value, toAddress);
 //3. Add this output as only input to t3
         t3.addInput(t2Output);
 
 //4. Use the to_address to add a "normal" pay-to-address output to t3.
         t3.addOutput(t2Output.getValue(), toAddress);
 //5. Return t3, t3 hash and t3 sighash (signing over all inputs and outputs)
-
 
         return new IncompleteT3WithHash("A1EFFEC100000000FF06", "A1EFFEC100000000FF07", "A1EFFEC100000000FF08");
 
