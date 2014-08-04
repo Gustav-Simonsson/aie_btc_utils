@@ -1,15 +1,7 @@
 package io.aie_btc_service.aie_btc_service;
 
-import com.google.bitcoin.core.Address;
-import com.google.bitcoin.core.DumpedPrivateKey;
-import com.google.bitcoin.core.ECKey;
-import com.google.bitcoin.core.AddressFormatException;
-import com.google.bitcoin.core.Sha256Hash;
-import com.google.bitcoin.core.StoredTransactionOutput;
-import com.google.bitcoin.core.Transaction;
+import com.google.bitcoin.core.*;
 import com.google.bitcoin.core.Transaction.SigHash;
-import com.google.bitcoin.core.TransactionInput;
-import com.google.bitcoin.core.TransactionOutPoint;
 import com.google.bitcoin.crypto.TransactionSignature;
 import com.google.bitcoin.script.Script;
 import com.google.bitcoin.script.ScriptBuilder;
@@ -256,8 +248,25 @@ public class BTCService {
         return new T2PartiallySigned(t2);
     }
 
-    public IncompleteT3WithHash createUnsignedT3(String s, String s1) {
-        throw new RuntimeException("Not implemented yet");
+    public IncompleteT3WithHash createUnsignedT3(String t2Hash, String toAddressString) throws AddressFormatException {
+        Address toAddress = new Address(NETWORK_PARAMETERS, toAddressString);
+
+
+//1. Create a new Transaction object (t3)
+        Transaction t3 = new Transaction(NETWORK_PARAMETERS); // empty tx
+//2. Dig up the t2 open output (the one we should have manually put in DB, since it's not added automatically by bitcoinj PostgresFullPrunedBlockStore)
+//2.b) Find t2 via t2Hash
+        TransactionOutput t2Output = null; // new TransactionOutput(NETWORK_PARAMETERS, );
+//3. Add this output as only input to t3
+        t3.addInput(t2Output);
+
+//4. Use the to_address to add a "normal" pay-to-address output to t3.
+        t3.addOutput(t2Output.getValue(), toAddress);
+//5. Return t3, t3 hash and t3 sighash (signing over all inputs and outputs)
+
+
+        return new IncompleteT3WithHash("A1EFFEC100000000FF06", "A1EFFEC100000000FF07", "A1EFFEC100000000FF08");
+
     }
 
     private static class CreateIncompleteT2A {

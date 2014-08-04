@@ -70,7 +70,6 @@ public class API1Service {
 
                     long value = Long.parseLong(request.queryParams("value"));
 
-
                     IncompleteT2WithHash t2WithHash = btcService.createIncompleteT2WithHash(
                             request.queryParams("giver-pubkey"),
                             request.queryParams("taker-pubkey"),
@@ -131,7 +130,6 @@ public class API1Service {
                     checkQueryParameters(request,
                             "t2-hash",
                             "to-address");
-
 
                     IncompleteT3WithHash t3WithHash = btcService.createUnsignedT3(
                             request.queryParams("t2-hash"),
