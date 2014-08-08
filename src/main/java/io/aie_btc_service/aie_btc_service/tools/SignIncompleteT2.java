@@ -28,7 +28,7 @@ public class SignIncompleteT2 {
 
     public static void main(String[] args) throws Exception {
 
-        String baseUrl = "" ;
+        String baseUrl = "http://aix1.diskordia.com:4567/";
         init();
         //Secretkey:
         // add harcoded testnet priv keys here for testing
@@ -64,7 +64,7 @@ public class SignIncompleteT2 {
         long value = 100000;
 
         //1. prepare request for getting unsigned T2A
-        String url = "http://127.0.0.1:4567/get-unsigned-t2?" + String.format("giver-pubkey=%s&taker-pubkey=%s&event-pubkey=%s&value=%s&owner-of-input-to-sign=%s",
+        String url = baseUrl + "get-unsigned-t2?" + String.format("giver-pubkey=%s&taker-pubkey=%s&event-pubkey=%s&value=%s&owner-of-input-to-sign=%s",
                 URLEncoder.encode(giverPubkey),
                 URLEncoder.encode(takerPubKey),
                 URLEncoder.encode(oraclePubKey),
@@ -99,7 +99,7 @@ public class SignIncompleteT2 {
         //
 
         //5. send signed result to API to /submit-first-t2-signature
-        url = "http://127.0.0.1:4567/submit-first-t2-signature?" + String.format("t2-signature=%s&t2-raw=%s&pubkey=%s&sign-for=%s",
+        url = baseUrl + "submit-first-t2-signature?" + String.format("t2-signature=%s&t2-raw=%s&pubkey=%s&sign-for=%s",
                 DatatypeConverter.printHexBinary(aliceTransactionSignature.encodeToBitcoin()),
                 URLEncoder.encode(result.getT2Raw()),
                 giverPubkey,
@@ -119,7 +119,7 @@ public class SignIncompleteT2 {
         // Sign second time
         //
 
-        url = "http://127.0.0.1:4567/submit-first-t2-signature?" + String.format("t2-signature=%s&t2-raw=%s&pubkey=%s&sign-for=%s",
+        url = baseUrl + "submit-first-t2-signature?" + String.format("t2-signature=%s&t2-raw=%s&pubkey=%s&sign-for=%s",
                 DatatypeConverter.printHexBinary(bobTransactionSignature.encodeToBitcoin()),
                 URLEncoder.encode(t2PartiallySigned.getT2RawPartiallySigned()),
                 takerPubKey,
