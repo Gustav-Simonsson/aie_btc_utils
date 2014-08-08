@@ -157,6 +157,7 @@ public class FullClient {
     public void broadcast(Transaction t2) {
 
         t2.verify();
+        Log.info("broadcastTransaction()");
 
         peerGroup.broadcastTransaction(t2, 1);
 

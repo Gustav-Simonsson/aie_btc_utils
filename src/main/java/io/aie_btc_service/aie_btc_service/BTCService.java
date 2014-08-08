@@ -12,6 +12,7 @@ import io.aie_btc_service.aie_btc_service.model.IncompleteT3WithHash;
 import io.aie_btc_service.aie_btc_service.model.T2PartiallySigned;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.nio.ByteBuffer;
 import java.math.BigInteger;
@@ -240,9 +241,9 @@ public class BTCService {
         boolean validSignature = ECKey.verify(hashForSignature, signature, pubkeyBytes);
 
         if (validSignature) {
-            Log.info("-----> Yay");
+            Log.info("validSignature? -----> Yay");
         } else {
-            Log.info("-> Nay");
+            Log.info("validSignature? -----> Nay");
         }
 
         return new T2PartiallySigned(t2);
@@ -271,6 +272,14 @@ public class BTCService {
 
         return new IncompleteT3WithHash("A1EFFEC100000000FF06", "A1EFFEC100000000FF07", "A1EFFEC100000000FF08");
 
+    }
+
+    public String signTransaction(String tx, String s) {
+        throw new NotImplementedException();
+    }
+
+    public String getPubKeyFromSecKey() {
+        throw new NotImplementedException();
     }
 
     private static class CreateIncompleteT2A {

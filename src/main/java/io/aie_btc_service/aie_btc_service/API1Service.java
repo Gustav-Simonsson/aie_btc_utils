@@ -108,9 +108,40 @@ public class API1Service {
                     Transaction t2 = new Transaction(new TestNet3Params(), t2Bytes);
 
                     if (!signForGiver) {
+                        Log.info("Not signed for giver");
                         fullClient.broadcast(t2);
                     }
                     return gson.toJson(t2PartiallySigned);
+
+                } catch (Exception e) {
+                    Log.error("Exception: ", e);
+                    return renderStackTrace(e);
+                }
+            }
+
+        });
+
+        /**
+         * This will call submit-t2-signature after creating t2-signature. pubkey will be derived from sec-key.
+         * signfor is giver or taker
+         */
+        get(new Route("/sign-transaction") {
+            @Override
+            public Object handle(Request request, Response response) {
+                response.header("Content-type", "text/plain");
+                Log.info("Working on: /sign-transaction");
+
+                try {
+
+                    checkQueryParameters(request, "t2-raw", "signer-key", "sign-for"); //sign-for giver or taker
+                    String signedTx = btcService.signTransaction(
+                            request.queryParams("tx"),
+                            request.queryParams("sec-key")
+                    );
+                    String pubkey = btcService.getPubKeyFromSecKey();
+
+
+                    return gson.toJson("xxx");
 
                 } catch (Exception e) {
                     Log.error("Exception: ", e);
