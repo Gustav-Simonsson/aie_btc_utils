@@ -61,7 +61,7 @@ public class SignIncompleteT2 {
         String oraclePubKey = DatatypeConverter.printHexBinary(oracleKey.getPubKey());
         String ownerOfInputToSign = "giver";
 
-        long value = 100000;
+        long value = 20000;
 
         //1. prepare request for getting unsigned T2A
         String url = baseUrl + "get-unsigned-t2?" + String.format("giver-pubkey=%s&taker-pubkey=%s&event-pubkey=%s&value=%s&owner-of-input-to-sign=%s",
