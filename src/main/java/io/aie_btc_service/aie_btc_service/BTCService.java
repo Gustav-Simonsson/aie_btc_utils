@@ -261,7 +261,7 @@ public class BTCService {
 //2.b) Find t2 via t2Hash
         OpenOutput openOutput = pg.getOpenOutputForTxHash(t2HashString); // new TransactionOutput(NETWORK_PARAMETERS, );
 //2.c) Transform OpenOutput to TransactionOutput
-        TransactionOutput t2Output = new TransactionOutput(NETWORK_PARAMETERS, t2, value, toAddress);
+        TransactionOutput t2Output = new TransactionOutput(NETWORK_PARAMETERS, t2, new BigInteger(openOutput.value), toAddress);
 //3. Add this output as only input to t3
         t3.addInput(t2Output);
 
