@@ -99,7 +99,7 @@ public class SignIncompleteT2 {
         //
 
         //5. send signed result to API to /submit-first-t2-signature
-        url = baseUrl + "submit-first-t2-signature?" + String.format("t2-signature=%s&t2-raw=%s&pubkey=%s&sign-for=%s",
+        url = baseUrl + "submit-t2-signature?" + String.format("t2-signature=%s&t2-raw=%s&pubkey=%s&sign-for=%s",
                 DatatypeConverter.printHexBinary(aliceTransactionSignature.encodeToBitcoin()),
                 URLEncoder.encode(result.getT2Raw()),
                 giverPubkey,
@@ -107,7 +107,7 @@ public class SignIncompleteT2 {
         );
         client = (HttpURLConnection) new URL(url).openConnection();
 
-        Log.info("Url.submit-first-t2-signature: " + url);
+        Log.info("Url.submit-t2-signature: " + url);
 
         //2. issue request
         client.connect();
@@ -119,7 +119,7 @@ public class SignIncompleteT2 {
         // Sign second time
         //
 
-        url = baseUrl + "submit-first-t2-signature?" + String.format("t2-signature=%s&t2-raw=%s&pubkey=%s&sign-for=%s",
+        url = baseUrl + "submit-t2-signature?" + String.format("t2-signature=%s&t2-raw=%s&pubkey=%s&sign-for=%s",
                 DatatypeConverter.printHexBinary(bobTransactionSignature.encodeToBitcoin()),
                 URLEncoder.encode(t2PartiallySigned.getT2RawPartiallySigned()),
                 takerPubKey,
@@ -128,7 +128,7 @@ public class SignIncompleteT2 {
 
         client = (HttpURLConnection) new URL(url).openConnection();
 
-        Log.info("Url.submit-first-t2-signature: " + url);
+        Log.info("Url.submit-t2-signature: " + url);
 
         //2. issue request
         client.connect();
