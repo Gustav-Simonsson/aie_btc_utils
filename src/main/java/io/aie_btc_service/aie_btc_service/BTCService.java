@@ -12,7 +12,6 @@ import io.aie_btc_service.aie_btc_service.model.IncompleteT3WithHash;
 import io.aie_btc_service.aie_btc_service.model.T2PartiallySigned;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.nio.ByteBuffer;
 import java.math.BigInteger;
@@ -274,12 +273,12 @@ public class BTCService {
 
     }
 
-    public String signTransaction(String tx, String s) {
-        throw new NotImplementedException();
+    public ECKey.ECDSASignature signTransaction(ECKey secKey, byte[] input) {
+        return secKey.sign(new Sha256Hash(input));
     }
 
     public String getPubKeyFromSecKey() {
-        throw new NotImplementedException();
+        throw new RuntimeException("Not implemented yet");
     }
 
     private static class CreateIncompleteT2A {

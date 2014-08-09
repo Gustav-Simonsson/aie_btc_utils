@@ -1,6 +1,8 @@
 package io.aie_btc_service.aie_btc_service;
 
+import com.google.bitcoin.core.ECKey;
 import com.google.bitcoin.core.Transaction;
+import com.google.bitcoin.crypto.TransactionSignature;
 import com.google.bitcoin.params.TestNet3Params;
 import com.google.bitcoin.utils.BriefLogFormatter;
 import com.google.gson.FieldNamingPolicy;
@@ -21,12 +23,20 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.math.BigInteger;
 
+import static io.aie_btc_service.aie_btc_service.FullClient.NETWORK_PARAMETERS;
 import static spark.Spark.get;
 
 
 public class API1Service {
 
     public static final Logger Log = LoggerFactory.getLogger(API1Service.class);
+    public static final String PARAM_T2_RAW = "t2-raw";
+    public static final String PARAM_SIGN_FOR = "sign-for";
+    public static final String PARAM_SIGNER_PRIVKEY = "signer-privkey";
+    public static final String PARAM_T2_SIGNATURE = "t2-signature";
+    public static final String PARAM_PUBKEY = "pubkey";
+    public static final String PARAM_VALUE_GIVER = "giver";
+    public static final String PARAM_T2_SIG_HASH_INPUT0 = "t2-sig-hash-input0";
 
     private static Gson gson;
     private static BTCService btcService = new BTCService();
@@ -92,20 +102,23 @@ public class API1Service {
 
                 try {
 
-                    checkQueryParameters(request, "t2-signature", "t2-raw", "pubkey", "sign-for");
-                    boolean signForGiver = "giver".equals(request.queryParams("sign-for"));
+                    checkQueryParameters(request, PARAM_T2_SIGNATURE, PARAM_T2_RAW, PARAM_PUBKEY, PARAM_SIGN_FOR);
+                    boolean signForGiver = PARAM_VALUE_GIVER.equals(request.queryParams(PARAM_SIGN_FOR));
                     Log.info("Working on: submit-first-t2-signature");
+
+
+
                     T2PartiallySigned t2PartiallySigned = btcService.submitFirstT2Signature(
-                            request.queryParams("t2-signature"),
-                            request.queryParams("t2-raw"),
-                            request.queryParams("pubkey"),
+                            request.queryParams(PARAM_T2_SIGNATURE),
+                            request.queryParams(PARAM_T2_RAW),
+                            request.queryParams(PARAM_PUBKEY),
                             signForGiver);
 
                     String t2String = t2PartiallySigned.getT2RawPartiallySigned();
 
                     byte[] t2Bytes = DatatypeConverter.parseHexBinary(t2String);
 
-                    Transaction t2 = new Transaction(new TestNet3Params(), t2Bytes);
+                    Transaction t2 = new Transaction(NETWORK_PARAMETERS, t2Bytes);
 
                     if (!signForGiver) {
                         Log.info("Not signed for giver");
@@ -132,16 +145,46 @@ public class API1Service {
                 Log.info("Working on: /sign-transaction");
 
                 try {
+                    checkQueryParameters(request, PARAM_T2_RAW, PARAM_SIGNER_PRIVKEY, PARAM_SIGN_FOR, PARAM_T2_SIG_HASH_INPUT0); //sign-for giver or taker
+                    boolean signForGiver = PARAM_VALUE_GIVER.equals(request.queryParams(PARAM_SIGN_FOR));
 
-                    checkQueryParameters(request, "t2-raw", "signer-key", "sign-for"); //sign-for giver or taker
-                    String signedTx = btcService.signTransaction(
-                            request.queryParams("tx"),
-                            request.queryParams("sec-key")
-                    );
-                    String pubkey = btcService.getPubKeyFromSecKey();
+                    String t2RawHexString = request.queryParams(PARAM_T2_RAW);
+                    byte[] t2RawBytes = DatatypeConverter.parseHexBinary(t2RawHexString);
+                    Transaction t2 = new Transaction(NETWORK_PARAMETERS, t2RawBytes);
 
+                    String signerPrivkeyString = request.queryParams(PARAM_SIGNER_PRIVKEY);
+                    byte[] signerPrivkeyBytes = DatatypeConverter.parseHexBinary(signerPrivkeyString);
 
-                    return gson.toJson("xxx");
+                    ECKey signerKey = new ECKey(signerPrivkeyBytes, null);
+
+                    String t2SigHash = request.queryParams(PARAM_T2_SIG_HASH_INPUT0);
+                    byte[] t2SigHashBytes = DatatypeConverter.parseHexBinary(t2SigHash);
+
+                    ECKey.ECDSASignature signature = btcService.signTransaction(signerKey, t2SigHashBytes);
+
+                    TransactionSignature txSignature = new TransactionSignature(signature, Transaction.SigHash.ALL, true);
+                    String t2SignatureHex = DatatypeConverter.printHexBinary(txSignature.encodeToBitcoin());
+
+                    Log.info("     signature: " + signature);
+                    Log.info("   txSignature: " + txSignature);
+                    Log.info("t2SignatureHex: " + t2SignatureHex);
+
+                    byte[] pubkey = signerKey.getPubKey();
+                    String pubKeyHex = DatatypeConverter.printHexBinary(pubkey);
+
+                    T2PartiallySigned t2PartiallySigned = btcService.submitFirstT2Signature(
+                            t2SignatureHex,
+                            t2RawHexString,
+                            pubKeyHex,
+                            signForGiver);
+
+                    String t2String = t2PartiallySigned.getT2RawPartiallySigned();
+
+                    if (!signForGiver) {
+                        Log.info("Not signed for giver");
+                        fullClient.broadcast(t2);
+                    }
+                    return gson.toJson(t2PartiallySigned);
 
                 } catch (Exception e) {
                     Log.error("Exception: ", e);
