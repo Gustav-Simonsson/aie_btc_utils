@@ -14,6 +14,7 @@ import io.aie_btc_service.aie_btc_service.model.IncompleteT3WithHash;
 import io.aie_btc_service.aie_btc_service.model.T2PartiallySigned;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import spark.Filter;
 import spark.Request;
 import spark.Response;
 import spark.Route;
@@ -24,6 +25,7 @@ import java.io.StringWriter;
 import java.math.BigInteger;
 
 import static io.aie_btc_service.aie_btc_service.FullClient.NETWORK_PARAMETERS;
+import static spark.Spark.before;
 import static spark.Spark.get;
 
 
@@ -45,10 +47,16 @@ public class API1Service {
     public static void main(String[] args) throws Exception {
         init();
 
+        before(new Filter() {
+            @Override
+            public void handle(Request request, Response response) {
+                response.type("text/plain");
+            }
+        });
+
         get(new Route("/address-balance/:address") {
             @Override
             public Object handle(Request request, Response response) {
-                response.header("Content-type", "text/plain");
 
                 BigInteger balance = new BigInteger("0");
                 try {
@@ -69,7 +77,6 @@ public class API1Service {
         get(new Route("/get-unsigned-t2") {
             @Override
             public Object handle(Request request, Response response) {
-                response.header("Content-type", "text/plain");
 
                 try {
                     checkQueryParameters(request,
@@ -98,7 +105,6 @@ public class API1Service {
         get(new Route("/submit-t2-signature") {
             @Override
             public Object handle(Request request, Response response) {
-                response.header("Content-type", "text/plain");
 
                 try {
 
@@ -141,7 +147,6 @@ public class API1Service {
         get(new Route("/sign-transaction") {
             @Override
             public Object handle(Request request, Response response) {
-                response.header("Content-type", "text/plain");
                 Log.info("Working on: /sign-transaction");
 
                 try {
@@ -197,7 +202,6 @@ public class API1Service {
         get(new Route("/get—unsigned-t3") {
             @Override
             public Object handle(Request request, Response response) {
-                response.header("Content-type", "text/plain");
 
                 try {
 
