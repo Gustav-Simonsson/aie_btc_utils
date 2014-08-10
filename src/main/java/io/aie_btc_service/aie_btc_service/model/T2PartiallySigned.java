@@ -11,9 +11,10 @@ public class T2PartiallySigned {
     private String t2RawPartiallySigned;
     //TODO: needs to be implemented
     private boolean t2Broadcasted = true;
-
+    private Transaction t;
 
     public T2PartiallySigned(Transaction t) {
+        this.t = t;
         this.newT2Hash = DatatypeConverter.printHexBinary(t.getHash().getBytes());
         this.t2RawPartiallySigned = DatatypeConverter.printHexBinary(t.bitcoinSerialize());
     }
@@ -24,7 +25,7 @@ public class T2PartiallySigned {
     }
 
     public String getNewT2Hash() {
-        return newT2Hash;
+        return DatatypeConverter.printHexBinary(t.getHash().getBytes());
     }
 
     public void setNewT2Hash(String newT2Hash) {
