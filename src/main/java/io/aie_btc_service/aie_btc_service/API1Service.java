@@ -130,8 +130,8 @@ public class API1Service {
 
                     Transaction t2 = new Transaction(NETWORK_PARAMETERS, t2Bytes);
 
-                    if (!signForGiver) {
-                        Log.info("Not signed for giver");
+                    if (signForGiver) {
+                        Log.info("Signed for giver. Broadcasting");
                         fullClient.broadcast(t2);
                     }
                     return gson.toJson(t2PartiallySigned);
@@ -191,8 +191,8 @@ public class API1Service {
 
                     String t2String = t2PartiallySigned.getT2RawPartiallySigned();
 
-                    if (!signForGiver) {
-                        Log.info("Not signed for giver");
+                    if (signForGiver) {
+                        Log.info("Signed for giver. Broadcasting");
                         fullClient.broadcast(t2);
                     }
                     return gson.toJson(t2PartiallySigned);
