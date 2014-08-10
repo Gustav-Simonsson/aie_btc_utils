@@ -255,20 +255,22 @@ public class BTCService {
         Transaction t2 = null;
         BigInteger value = null;
 
-//1. Create a new Transaction object (t3)
+        //1. Create a new Transaction object (t3)
         Transaction t3 = new Transaction(NETWORK_PARAMETERS); // empty tx
-//2. Dig up the t2 open output (the one we should have manually put in DB, since it's not added automatically by bitcoinj PostgresFullPrunedBlockStore)
-//2.b) Find t2 via t2Hash
+        //2. Dig up the t2 open output (the one we should have manually put in DB, since it's not added automatically by bitcoinj PostgresFullPrunedBlockStore)
+        //2.b) Find t2 via t2Hash
         OpenOutput openOutput = pg.getOpenOutputForTxHash(t2HashString); // new TransactionOutput(NETWORK_PARAMETERS, );
         Log.info("createUnsignedT3() | openOutput: " + openOutput);
-//2.c) Transform OpenOutput to TransactionOutput
+        //2.c) Transform OpenOutput to TransactionOutput
+        TransactionOutPoint t2OutPoint = new TransactionOutPoint(NETWORK_PARAMETERS, openOutput.index, new Sha256Hash(t2Hash));
+        TransactionInput t3Input = new TransactionInput(NETWORK_PARAMETERS, null, new byte[]{}, t2OutPoint);
         TransactionOutput t2Output = new TransactionOutput(NETWORK_PARAMETERS, t2, new BigInteger(openOutput.value), toAddress);
-//3. Add this output as only input to t3
-        t3.addInput(t2Output);
+        //3. Add this output as only input to t3
+        t3.addInput(t3Input);
 
-//4. Use the to_address to add a "normal" pay-to-address output to t3.
+        //4. Use the to_address to add a "normal" pay-to-address output to t3.
         t3.addOutput(t2Output.getValue(), toAddress);
-//5. Return t3, t3 hash and t3 sighash (signing over all inputs and outputs)
+        //5. Return t3, t3 hash and t3 sighash (signing over all inputs and outputs)
 
         return new IncompleteT3WithHash("A1EFFEC100000000FF06", "A1EFFEC100000000FF07", "A1EFFEC100000000FF08");
 
