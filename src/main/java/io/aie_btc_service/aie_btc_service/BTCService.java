@@ -81,7 +81,7 @@ public class BTCService {
         // t2 has the multisig output and inputs from alice and bob
         //TODO: reenable open output
 //        t2.verify();
-//        Log.info("unsignedOO.value: " + DatatypeConverter.printHexBinary(aliceOO.value));
+//        Log.info("unsignedOO.value:  " + DatatypeConverter.printHexBinary(aliceOO.value));
         Log.info("           t2: " + t2);
         Log.info("      t2.hash: " + t2.getHashAsString());
         Log.info("t2 output scriptPubKeyBytes: " + DatatypeConverter.printHexBinary(t2.getOutput(0).getScriptBytes()));
@@ -225,7 +225,7 @@ public class BTCService {
         Log.info("signForGiver: " + signForGiver);
         // (5. Apply signature to Transaction)
         // 6. Sign input 0 or 1
-        t2.getInput(signForGiver ? 0 : 1).setScriptSig(ScriptBuilder.createInputScript(t2TransactionSignature, ecPubKey));
+        t2.getInput(inputIndex).setScriptSig(ScriptBuilder.createInputScript(t2TransactionSignature, ecPubKey));
 
         Log.info(" t2.getHashAsString(): " + t2.getHashAsString());
         Log.info("t2.input.scriptSig(0): " + t2.getInput(0).getScriptSig());
@@ -260,6 +260,7 @@ public class BTCService {
 //2. Dig up the t2 open output (the one we should have manually put in DB, since it's not added automatically by bitcoinj PostgresFullPrunedBlockStore)
 //2.b) Find t2 via t2Hash
         OpenOutput openOutput = pg.getOpenOutputForTxHash(t2HashString); // new TransactionOutput(NETWORK_PARAMETERS, );
+        assert openOutput != null;
 //2.c) Transform OpenOutput to TransactionOutput
         TransactionOutput t2Output = new TransactionOutput(NETWORK_PARAMETERS, t2, new BigInteger(openOutput.value), toAddress);
 //3. Add this output as only input to t3

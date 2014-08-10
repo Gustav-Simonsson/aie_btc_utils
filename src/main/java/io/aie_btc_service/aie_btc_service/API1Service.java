@@ -8,6 +8,7 @@ import com.google.bitcoin.utils.BriefLogFormatter;
 import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.sun.org.apache.xerces.internal.impl.PropertyManager;
 import io.aie_btc_service.aie_btc_service.model.IncompleteT2AResponse;
 
 import io.aie_btc_service.aie_btc_service.model.IncompleteT3WithHash;
@@ -20,9 +21,12 @@ import spark.Response;
 import spark.Route;
 
 import javax.xml.bind.DatatypeConverter;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.math.BigInteger;
+import java.util.Properties;
 
 import static io.aie_btc_service.aie_btc_service.FullClient.NETWORK_PARAMETERS;
 import static spark.Spark.before;
@@ -112,8 +116,6 @@ public class API1Service {
                     boolean signForGiver = PARAM_VALUE_GIVER.equals(request.queryParams(PARAM_SIGN_FOR));
                     Log.info("Working on: submit-first-t2-signature");
 
-
-
                     T2PartiallySigned t2PartiallySigned = btcService.submitFirstT2Signature(
                             request.queryParams(PARAM_T2_SIGNATURE),
                             request.queryParams(PARAM_T2_RAW),
@@ -199,16 +201,13 @@ public class API1Service {
 
         });
 
-        get(new Route("/get—unsigned-t3") {
+        get(new Route("/get-unsigned-t3") {
             @Override
             public Object handle(Request request, Response response) {
-
+//                Log.info("handle()");
                 try {
 
-                    checkQueryParameters(request,
-                            "t2-hash",
-                            "to-address");
-
+                    checkQueryParameters(request, "t2-hash", "to-address");
                     IncompleteT3WithHash t3WithHash = btcService.createUnsignedT3(
                             request.queryParams("t2-hash"),
                             request.queryParams("to-address"));
@@ -256,4 +255,15 @@ public class API1Service {
             }
         }
     }
+    public static Properties getProperties() {
+        InputStream inputStream = API1Service.class.getClassLoader().getResourceAsStream("application.properties");
+        Properties properties = new Properties();
+        try {
+            properties.load(inputStream);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return properties;
+    }
+
 }

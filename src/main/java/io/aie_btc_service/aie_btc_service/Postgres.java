@@ -49,8 +49,9 @@ public class Postgres {
         Address address = null;
         try {
             address = new Address(NETWORK_PARAMETERS, a);
+        } catch (AddressFormatException e) {
+            throw new RuntimeException(e);
         }
-        catch (AddressFormatException e) {}
 
         maybeConnect();
         PreparedStatement s = null;
@@ -86,6 +87,7 @@ public class Postgres {
     }
 
     public void insertOpenOutput(StoredTransactionOutput out) {
+        Log.info("insertOpenOutput(): hash: " + out.getHash());
         maybeConnect();
         PreparedStatement s = null;
         try {
@@ -100,14 +102,14 @@ public class Postgres {
             s.close();
         } catch (SQLException e) {
             Log.error("SQLException :O " + e);
-            return;
+            throw new RuntimeException(e);
         } finally {
             if (s != null)
                 try {
                     s.close();
                 } catch (SQLException e) {
                     Log.error("SQLException :O " + e);
-                    return;
+                    throw new RuntimeException(e);
                 }
         }
     }
@@ -169,13 +171,14 @@ public class Postgres {
             }
         } catch (SQLException ex) {
             Log.error("SQLException :O " + ex);
-            return oo;
+            throw new RuntimeException(ex);
         } finally {
             if (s != null)
                 try {
                     s.close();
                 } catch (SQLException ex2) {
                     Log.error("SQLException :O " + ex2);
+                    throw new RuntimeException(ex2);
                 }
         }
     }

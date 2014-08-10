@@ -9,6 +9,8 @@ import com.google.bitcoin.utils.BriefLogFormatter;
 import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.sun.org.apache.xerces.internal.impl.PropertyManager;
+import io.aie_btc_service.aie_btc_service.API1Service;
 import io.aie_btc_service.aie_btc_service.BTCService;
 import io.aie_btc_service.aie_btc_service.model.IncompleteT2AResponse;
 import io.aie_btc_service.aie_btc_service.model.T2PartiallySigned;
@@ -16,24 +18,31 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.xml.bind.DatatypeConverter;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.util.Properties;
 
 public class SignIncompleteT2 {
 
     private static final Logger Log = LoggerFactory.getLogger(SignIncompleteT2.class);
     private static Gson gson;
-    public static final String BASE_URL = "http://aix1.diskordia.com:4567/";
+    public static final String BASE_URL = "http://localhost:4567/";
 
     public static final ECKey oracleKey = BTCService.getECKeyFromWalletImportFormat("Kz3XP25cwgdpuWjz2ivbJbdrtrN5KLYGJX1hp4nF9Xaz8untnz11");
     public static final ECKey aliceKey = BTCService.getECKeyFromWalletImportFormat("KyVTTGNzFwtxA7Kn8R9jEqqLWJLsGf1KkqtisfWWdaTZEV4Vbn3P");
     public static final ECKey bobKey = BTCService.getECKeyFromWalletImportFormat("L1TCq6BgW3gyeuWQSNagoNUZWBQ3uGmgA9Ud2bFVddTAmW7qRYcE");
 
+    private static String baseUrl;
 
     public static void main(String[] args) throws Exception {
 
+        Properties properties = API1Service.getProperties();
+        baseUrl = properties.getProperty("base.url", BASE_URL);
+        Log.info("baseUrl: " + baseUrl);
 
         initGson();
         //Secretkey:
@@ -67,7 +76,7 @@ public class SignIncompleteT2 {
         long value = 20000;
 
         //1. prepare request for getting unsigned T2A
-        String url = BASE_URL + "get-unsigned-t2?" + String.format("giver-pubkey=%s&taker-pubkey=%s&event-pubkey=%s&value=%s&owner-of-input-to-sign=%s",
+        String url = baseUrl + "get-unsigned-t2?" + String.format("giver-pubkey=%s&taker-pubkey=%s&event-pubkey=%s&value=%s&owner-of-input-to-sign=%s",
                 URLEncoder.encode(giverPubkey),
                 URLEncoder.encode(takerPubKey),
                 URLEncoder.encode(oraclePubKey),
@@ -102,7 +111,7 @@ public class SignIncompleteT2 {
         //
 
         //5. send signed result to API to /submit-first-t2-signature
-        url = BASE_URL + "submit-t2-signature?" + String.format("t2-signature=%s&t2-raw=%s&pubkey=%s&sign-for=%s",
+        url = baseUrl + "submit-t2-signature?" + String.format("t2-signature=%s&t2-raw=%s&pubkey=%s&sign-for=%s",
                 DatatypeConverter.printHexBinary(aliceTransactionSignature.encodeToBitcoin()),
                 URLEncoder.encode(result.getT2Raw()),
                 giverPubkey,
@@ -122,7 +131,7 @@ public class SignIncompleteT2 {
         // Sign second time
         //
 
-        url = BASE_URL + "submit-t2-signature?" + String.format("t2-signature=%s&t2-raw=%s&pubkey=%s&sign-for=%s",
+        url = baseUrl + "submit-t2-signature?" + String.format("t2-signature=%s&t2-raw=%s&pubkey=%s&sign-for=%s",
                 DatatypeConverter.printHexBinary(bobTransactionSignature.encodeToBitcoin()),
                 URLEncoder.encode(t2PartiallySigned.getT2RawPartiallySigned()),
                 takerPubKey,
@@ -141,6 +150,8 @@ public class SignIncompleteT2 {
 
 
     }
+
+
 
     public static Gson initGson() {
         BriefLogFormatter.init();

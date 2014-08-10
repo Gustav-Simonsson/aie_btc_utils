@@ -45,7 +45,7 @@ public class FullClient {
 
         BriefLogFormatter.initVerbose();
 
-        Properties properties = getProperties();
+        Properties properties = API1Service.getProperties();
 
         DB_HOST = properties.getProperty("db.host");
         DB_NAME = properties.getProperty("db.name");
@@ -73,17 +73,6 @@ public class FullClient {
         Log.info("FullClient.run() called");
         connectBlockChain();
 
-    }
-
-    private Properties getProperties() {
-        InputStream inputStream = getClass().getClassLoader().getResourceAsStream("application.properties");
-        Properties properties = new Properties();
-        try {
-            properties.load(inputStream);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return properties;
     }
 
     private void connectBlockChain() {
