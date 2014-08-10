@@ -216,6 +216,7 @@ public class BTCService {
 
         TransactionSignature t2TransactionSignature = TransactionSignature.decodeFromBitcoin(t2SignatureBytes, true);
         Log.info("t2TransactionSignature.decodeFromBitcoin: " + DatatypeConverter.printHexBinary(t2TransactionSignature.encodeToBitcoin()));
+        t2TransactionSignature.setSigHash(SigHash.ALL, true);
 
         // 4. Decode pubkey
         // TODO: change from hex bin to base64 for more standarised serialisation

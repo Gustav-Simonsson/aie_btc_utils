@@ -1,5 +1,11 @@
 package io.aie_btc_service.aie_btc_service.model;
 
+import com.google.bitcoin.core.Transaction;
+
+import javax.xml.bind.DatatypeConverter;
+
+import static io.aie_btc_service.aie_btc_service.FullClient.NETWORK_PARAMETERS;
+
 public class NewT3 {
 
     private String newT3Hash;
@@ -10,6 +16,12 @@ public class NewT3 {
         this.newT3Hash = newT3Hash;
         this.newT3Raw = newT3Raw;
         this.t3Broadcasted = t3Broadcasted;
+    }
+
+    public Transaction getNewT3() {
+        byte[] t3Bytes = DatatypeConverter.parseHexBinary(newT3Raw);
+        Transaction newT3 = new Transaction(NETWORK_PARAMETERS, t3Bytes);
+        return newT3;
     }
 
     @Override

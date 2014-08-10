@@ -237,6 +237,8 @@ public class API1Service {
                             request.queryParams("t3-signature2")
                     );
 
+                    fullClient.broadcast(t3WithHash.getNewT3());
+
                     return gson.toJson(t3WithHash);
                 } catch (Exception e) {
                     Log.error("Exception: ", e);
