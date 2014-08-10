@@ -9,6 +9,7 @@ import com.google.bitcoin.store.BlockStoreException;
 import com.google.common.collect.ImmutableList;
 
 import io.aie_btc_service.aie_btc_service.model.IncompleteT3WithHash;
+import io.aie_btc_service.aie_btc_service.model.NewT3;
 import io.aie_btc_service.aie_btc_service.model.T2PartiallySigned;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -291,8 +292,32 @@ public class BTCService {
         return secKey.sign(new Sha256Hash(input));
     }
 
-    public String getPubKeyFromSecKey() {
-        throw new RuntimeException("Not implemented yet");
+    public NewT3 submitT3Signatures(String t3RawString, String t3Signature1String,
+                                    String t3Signature2String) {
+
+        byte[] t3RawBytes = DatatypeConverter.parseHexBinary(t3RawString);
+        byte[] t3Signature1Bytes = DatatypeConverter.parseHexBinary(t3Signature1String);
+        byte[] t3Signature2Bytes = DatatypeConverter.parseHexBinary(t3Signature2String);
+
+        Transaction t3 = new Transaction(NETWORK_PARAMETERS, t3RawBytes);
+
+        ECKey.ECDSASignature t3Signature1 = ECKey.ECDSASignature.decodeFromDER(t3Signature1Bytes);
+        ECKey.ECDSASignature t3Signature2 = ECKey.ECDSASignature.decodeFromDER(t3Signature2Bytes);
+
+        TransactionSignature t3TransactionSignature1 =
+                new TransactionSignature(t3Signature1, SigHash.ALL, true);
+
+        TransactionSignature t3TransactionSignature2 =
+                new TransactionSignature(t3Signature2, SigHash.ALL, true);
+
+        List<TransactionSignature> signatures = ImmutableList.of(t3TransactionSignature1, t3TransactionSignature2);
+        t3.getInput(0).setScriptSig(ScriptBuilder.createMultiSigInputScript(signatures));
+
+        Sha256Hash newT3Hash = t3.getHash();
+        String newT3HashString = DatatypeConverter.printHexBinary(newT3Hash.getBytes());
+        String newT3Raw = DatatypeConverter.printHexBinary(t3.bitcoinSerialize());
+
+        return new NewT3(newT3HashString, newT3Raw, true);
     }
 
     private static class CreateIncompleteT2A {

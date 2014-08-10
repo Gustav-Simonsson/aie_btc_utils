@@ -12,6 +12,7 @@ import com.sun.org.apache.xerces.internal.impl.PropertyManager;
 import io.aie_btc_service.aie_btc_service.model.IncompleteT2AResponse;
 
 import io.aie_btc_service.aie_btc_service.model.IncompleteT3WithHash;
+import io.aie_btc_service.aie_btc_service.model.NewT3;
 import io.aie_btc_service.aie_btc_service.model.T2PartiallySigned;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -204,13 +205,54 @@ public class API1Service {
         get(new Route("/get-unsigned-t3") {
             @Override
             public Object handle(Request request, Response response) {
-//                Log.info("handle()");
                 try {
 
                     checkQueryParameters(request, "t2-hash", "to-address");
                     IncompleteT3WithHash t3WithHash = btcService.createUnsignedT3(
                             request.queryParams("t2-hash"),
                             request.queryParams("to-address"));
+
+                    return gson.toJson(t3WithHash);
+                } catch (Exception e) {
+                    Log.error("Exception: ", e);
+                    return renderStackTrace(e);
+                }
+            }
+
+        });
+/*
+
+submit-t3-signatures:
+
+URL: http://localhost/submit-t3-signatures
+
+
+Request parameters:
+"t3-raw"        : "FFFF" (ASCII HEX)
+"t3-signature1" : "FFFF"
+
+"t3-signature2" : "FFFF"
+
+
+Response parameters:
+"new-t3-hash"    : "FFFF"
+"new-t3-raw"     : "FFFF"
+
+"t3-broadcasted" : true
+
+ */
+        get(new Route("/submit-t3-signatures") {
+            @Override
+            public Object handle(Request request, Response response) {
+//                Log.info("handle()");
+                try {
+
+                    checkQueryParameters(request, "t3-raw", "t3-signature1", "t3-signature2");
+                    NewT3 t3WithHash = btcService.submitT3Signatures(
+                            request.queryParams("t3-raw"),
+                            request.queryParams("t3-signature1"),
+                            request.queryParams("t3-signature2")
+                    );
 
                     return gson.toJson(t3WithHash);
                 } catch (Exception e) {
