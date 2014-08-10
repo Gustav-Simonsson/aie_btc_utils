@@ -271,8 +271,19 @@ public class BTCService {
         //4. Use the to_address to add a "normal" pay-to-address output to t3.
         t3.addOutput(t2Output.getValue(), toAddress);
         //5. Return t3, t3 hash and t3 sighash (signing over all inputs and outputs)
+        Log.info("t3: " + t3);
 
-        return new IncompleteT3WithHash("A1EFFEC100000000FF06", "A1EFFEC100000000FF07", "A1EFFEC100000000FF08");
+        String t3Hash = DatatypeConverter.printHexBinary(t3.getHash().getBytes());
+        String t3Raw = DatatypeConverter.printHexBinary(t3.bitcoinSerialize());
+
+        byte[] scriptbytes = openOutput.scriptbytes;
+        Script inputScript = new Script(scriptbytes);
+
+        Sha256Hash t3SigHash = t3.hashForSignature(openOutput.index, inputScript, SigHash.ALL, false);
+
+        String t3SigHashHexString = DatatypeConverter.printHexBinary(t3SigHash.getBytes());
+
+        return new IncompleteT3WithHash(t3SigHashHexString, t3Hash, t3Raw);
 
     }
 
