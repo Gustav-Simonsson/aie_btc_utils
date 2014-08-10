@@ -220,7 +220,7 @@ public class BTCService {
         // 4. Decode pubkey
         // TODO: change from hex bin to base64 for more standarised serialisation
         byte[] pubkeyBytes = DatatypeConverter.parseHexBinary(pubKey);
-        ECKey ecPubKey = new ECKey(null, pubkeyBytes, false);
+        ECKey ecPubKey = new ECKey(null, pubkeyBytes, true);
         Log.info("ecPubKey: " + ecPubKey);
 
         Log.info("signForGiver: " + signForGiver);
@@ -235,16 +235,16 @@ public class BTCService {
 
 
         //check signature is ok
-        byte[] scriptSig = t2.getInput(inputIndex).getScriptBytes();
-        byte[] hashForSignature = t2.hashForSignature(inputIndex, scriptSig, SigHash.ALL, true).getBytes();
-        ECKey.ECDSASignature signature = new ECKey.ECDSASignature(t2TransactionSignature.r, t2TransactionSignature.s);
-        boolean validSignature = ECKey.verify(hashForSignature, signature, pubkeyBytes);
+//        byte[] scriptSig = t2.getInput(inputIndex).getScriptBytes();
+//        byte[] hashForSignature = t2.hashForSignature(inputIndex, scriptSig, SigHash.ALL, true).getBytes();
+//        ECKey.ECDSASignature signature = new ECKey.ECDSASignature(t2TransactionSignature.r, t2TransactionSignature.s);
+//        boolean validSignature = ECKey.verify(hashForSignature, signature, pubkeyBytes);
 
-        if (validSignature) {
-            Log.info("validSignature? -----> Yay");
-        } else {
-            Log.info("validSignature? -----> Nay");
-        }
+//        if (validSignature) {
+//            Log.info("validSignature? -----> Yay");
+//        } else {
+//            Log.info("validSignature? -----> Nay");
+//        }
 
         return new T2PartiallySigned(t2);
     }

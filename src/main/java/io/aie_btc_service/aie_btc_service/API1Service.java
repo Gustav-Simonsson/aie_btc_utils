@@ -29,6 +29,7 @@ import java.io.StringWriter;
 import java.math.BigInteger;
 import java.util.Properties;
 
+import static com.google.bitcoin.core.Transaction.SigHash.*;
 import static io.aie_btc_service.aie_btc_service.FullClient.NETWORK_PARAMETERS;
 import static spark.Spark.before;
 import static spark.Spark.get;
@@ -170,14 +171,16 @@ public class API1Service {
 
                     ECKey.ECDSASignature signature = btcService.signTransaction(signerKey, t2SigHashBytes);
 
-                    TransactionSignature txSignature = new TransactionSignature(signature, Transaction.SigHash.ALL, true);
+                    TransactionSignature txSignature = new TransactionSignature(signature, ALL, true);
                     String t2SignatureHex = DatatypeConverter.printHexBinary(txSignature.encodeToBitcoin());
 
                     Log.info("     signature: " + signature);
                     Log.info("   txSignature: " + txSignature);
                     Log.info("t2SignatureHex: " + t2SignatureHex);
 
-                    byte[] pubkey = signerKey.getPubKey();
+                    ECKey tmpKey = new ECKey(new BigInteger(signerKey.getPrivKeyBytes()),
+                            null, true);
+                    byte[] pubkey = tmpKey.getPubKey();
                     String pubKeyHex = DatatypeConverter.printHexBinary(pubkey);
 
                     T2PartiallySigned t2PartiallySigned = btcService.submitFirstT2Signature(
@@ -220,27 +223,7 @@ public class API1Service {
             }
 
         });
-/*
 
-submit-t3-signatures:
-
-URL: http://localhost/submit-t3-signatures
-
-
-Request parameters:
-"t3-raw"        : "FFFF" (ASCII HEX)
-"t3-signature1" : "FFFF"
-
-"t3-signature2" : "FFFF"
-
-
-Response parameters:
-"new-t3-hash"    : "FFFF"
-"new-t3-raw"     : "FFFF"
-
-"t3-broadcasted" : true
-
- */
         get(new Route("/submit-t3-signatures") {
             @Override
             public Object handle(Request request, Response response) {
